@@ -28,3 +28,5 @@ _cache/
 dist/
 srcds_controller
 .srcds_controller.yaml
+
+vendor.orig/
