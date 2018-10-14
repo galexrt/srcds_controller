@@ -1,0 +1,5 @@
+.srcds_controller.yaml
+srcds_controller
+
+_build/
+_cache/
