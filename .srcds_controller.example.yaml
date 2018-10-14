@@ -1,0 +1,25 @@
+servers:
+  # name must be unique
+  - name: YOUR_SERVER_NAME
+    address: 127.0.0.1
+    port: 27015
+    screeName: WILL_BE_USED_IN_THE_FUTURE
+    path: WILL_BE_USED_IN_THE_FUTURE
+    checks:
+      - name: rcon
+        opts:
+          password: YOUR_RCON_PASSWORD
+        limit:
+          after: 10m
+          count: 1
+          actions:
+            - echo HELLO WORLD
+            # Run restart script for server
+checker:
+  interval: 30s
+  splay:
+    start: 0
+    end: 15
+checks:
+  rcon:
+    timeout: 12s

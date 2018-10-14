@@ -1,0 +1,84 @@
+/*
+Copyright 2018 Alexander Trost <galexrt@googlemail.com>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package checker
+
+import (
+	"sync"
+	"time"
+
+	"github.com/galexrt/srcds_controller/pkg/actionexec"
+	"github.com/galexrt/srcds_controller/pkg/config"
+)
+
+type ResultCounter struct {
+	Count     int64
+	FirstTime time.Time
+	LastTime  time.Time
+}
+
+type ResultServerList map[string]map[string]*ResultCounter
+
+type Result struct {
+	Check  config.Check
+	Server config.Server
+	Return bool
+}
+
+func (r ResultServerList) Add(result Result) {
+	if _, ok := r[result.Server.Name]; !ok {
+		r[result.Server.Name] = map[string]*ResultCounter{}
+	}
+	if !result.Return {
+		if _, ok := r[result.Server.Name][result.Check.Name]; !ok {
+			r[result.Server.Name][result.Check.Name] = &ResultCounter{
+				Count:     0,
+				FirstTime: time.Now(),
+				LastTime:  time.Now(),
+			}
+		}
+		r[result.Server.Name][result.Check.Name].Count++
+		r[result.Server.Name][result.Check.Name].LastTime = time.Now()
+	} else {
+		if _, ok := r[result.Server.Name][result.Check.Name]; ok {
+			delete(r[result.Server.Name], result.Check.Name)
+		}
+		return
+	}
+
+	r.evaluate(r[result.Server.Name][result.Check.Name], result.Check, result.Server)
+}
+
+func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, server config.Server) {
+	wg := sync.WaitGroup{}
+	logger.Debugf("evaluating result counter for server %s check %s", server.Name, check.Name)
+	if (check.Limit.Count != 0 && counter.Count >= check.Limit.Count) || (check.Limit.After != 0 && counter.LastTime.Sub(counter.FirstTime) >= check.Limit.After) {
+		logger.Infof("result counter over limit for server %s check %s", server.Name, check.Name)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for _, action := range check.Limit.Actions {
+				actionexec.RunAction(action, server)
+			}
+		}()
+		counter.Count = 0
+		now := time.Now()
+		counter.FirstTime = now
+		counter.LastTime = now
+	}
+	wg.Wait()
+	return
+}
