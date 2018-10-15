@@ -16,12 +16,30 @@ limitations under the License.
 
 package config
 
-// Cfg variable holding the global config object
-var Cfg *Config
+import (
+	"strings"
+)
 
-// Config config file struct
-type Config struct {
-	Servers Servers              `yaml:"servers"`
-	Checker Checker              `yaml:"checker"`
-	Checks  map[string]CheckOpts `yaml:"checks"`
+// Servers list of Server
+type Servers []Server
+
+// Server config/info for a server
+type Server struct {
+	Name       string  `yaml:"name"`
+	Address    string  `yaml:"address"`
+	Port       int     `yaml:"port"`
+	ScreenName string  `yaml:"screenName"`
+	Path       string  `yaml:"path"`
+	Checks     []Check `yaml:"checks"`
+}
+
+// GetByName return server from list by name
+func (s Servers) GetByName(name string) *Server {
+	name = strings.ToLower(name)
+	for _, server := range s {
+		if strings.ToLower(server.Name) == name {
+			return &server
+		}
+	}
+	return nil
 }
