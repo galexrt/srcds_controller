@@ -26,7 +26,8 @@ import (
 // serverRestartCmd represents the restart command
 var serverRestartCmd = &cobra.Command{
 	Use:   "restart",
-	Short: "A brief description of your command",
+	Short: "Restart one or more servers",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("restart called")
 	},

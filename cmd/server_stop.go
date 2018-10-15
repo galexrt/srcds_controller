@@ -26,7 +26,8 @@ import (
 // serverStopCmd represents the stop command
 var serverStopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "A brief description of your command",
+	Short: "Stop one or more servers",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("stop called")
 	},
@@ -35,6 +36,6 @@ var serverStopCmd = &cobra.Command{
 func init() {
 	serverCmd.AddCommand(serverStopCmd)
 
-	serverRestartCmd.Flags().BoolP("force", "f", false, "Force server restart")
-	serverRestartCmd.Flags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
+	serverStopCmd.Flags().BoolP("force", "f", false, "Force server restart")
+	serverStopCmd.Flags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
 }

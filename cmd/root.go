@@ -36,7 +36,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "srcds_controller",
-	Short: "TODO srcds_controller short description",
+	Short: "Check if srcds servers are up and react on that, and manage one or more servers using a systemctl like cli",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

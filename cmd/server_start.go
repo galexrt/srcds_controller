@@ -25,7 +25,8 @@ import (
 // serverStartCmd represents the start command
 var serverStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "A brief description of your command",
+	Short: "Start one or more servers",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("start called")
 	},

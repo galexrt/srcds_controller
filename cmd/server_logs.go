@@ -25,7 +25,8 @@ import (
 // serverLogsCmd represents the logs command
 var serverLogsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "A brief description of your command",
+	Short: "Show logs of one or more servers",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("logs called")
 	},

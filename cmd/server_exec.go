@@ -18,21 +18,20 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
 )
 
-// checkerCmd represents the version command
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Show version info",
+// serverExecCmd represents the exec command
+var serverExecCmd = &cobra.Command{
+	Use:   "exec",
+	Short: "Run a command in one or more servers consoles.",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Print(version.Print(os.Args[0]))
+		fmt.Println("exec called")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	serverCmd.AddCommand(serverExecCmd)
 }

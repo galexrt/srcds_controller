@@ -25,7 +25,8 @@ import (
 // serverStatusCmd represents the status command
 var serverStatusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "A brief description of your command",
+	Short: "Show status of one or more servers",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("status called")
 	},
