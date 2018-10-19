@@ -26,9 +26,11 @@ import (
 var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "pkg/actionexec")
 
 // RunAction run a command in shell
-func RunAction(action string, server config.Server) {
+func RunAction(cwd string, action string, server config.Server) {
 	logger.Infof("running '%s'", action)
-	out, err := exec.Command("bash", "-c", action).Output()
+	command := exec.Command("bash", "-c", action)
+	command.Dir = cwd
+	out, err := command.CombinedOutput()
 	if err != nil {
 		logger.Errorf("error running '%s'", action)
 	}

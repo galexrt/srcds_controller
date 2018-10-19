@@ -75,6 +75,9 @@ func initConfig() {
 		if err = yaml.Unmarshal(out, config.Cfg); err != nil {
 			logger.Fatal(err)
 		}
+		if err = config.Cfg.Verify(); err != nil {
+			logger.Fatal(err)
+		}
 	} else {
 		logger.Fatal("no config found in home dir nor specified by flag")
 	}

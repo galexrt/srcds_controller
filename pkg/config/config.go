@@ -16,6 +16,14 @@ limitations under the License.
 
 package config
 
+import (
+	"path/filepath"
+
+	"github.com/coreos/pkg/capnslog"
+)
+
+var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "pkg/config")
+
 // Cfg variable holding the global config object
 var Cfg *Config
 
@@ -24,4 +32,19 @@ type Config struct {
 	Servers Servers              `yaml:"servers"`
 	Checker Checker              `yaml:"checker"`
 	Checks  map[string]CheckOpts `yaml:"checks"`
+}
+
+// Verify verify the config file
+func (c *Config) Verify() error {
+	for k, server := range c.Servers {
+		cleanedPath, err := filepath.Abs(server.Path)
+		if err != nil {
+			return err
+		}
+		if cleanedPath != server.Path {
+			logger.Debugf("cleaned server %s path from %s to %s", server.Name, server.Path, cleanedPath)
+			c.Servers[k].Path = cleanedPath
+		}
+	}
+	return nil
 }

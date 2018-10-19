@@ -24,20 +24,24 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/config"
 )
 
+// ResultCounter
 type ResultCounter struct {
 	Count     int64
 	FirstTime time.Time
 	LastTime  time.Time
 }
 
+// ResultServerList
 type ResultServerList map[string]map[string]*ResultCounter
 
+// Result
 type Result struct {
 	Check  config.Check
 	Server config.Server
 	Return bool
 }
 
+// Add
 func (r ResultServerList) Add(result Result) {
 	if _, ok := r[result.Server.Name]; !ok {
 		r[result.Server.Name] = map[string]*ResultCounter{}
@@ -71,7 +75,7 @@ func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, s
 		go func() {
 			defer wg.Done()
 			for _, action := range check.Limit.Actions {
-				actionexec.RunAction(action, server)
+				actionexec.RunAction(server.Path, action, server)
 			}
 		}()
 		counter.Count = 0
