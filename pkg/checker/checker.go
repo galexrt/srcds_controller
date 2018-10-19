@@ -53,18 +53,19 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 				go func(check config.Check, server config.Server) {
 					defer wg.Done()
 					for {
+						logger.Debugf("running check %s", check.Name)
+						resultCh <- Result{
+							Check:  check,
+							Server: server,
+							Return: checks.Checks[check.Name](check, server),
+						}
+
 						splayTime := calculateTimeSplay(config.Cfg.Checker.Splay.Start, config.Cfg.Checker.Splay.End)
 						waitTime := config.Cfg.Checker.Interval + splayTime
 						logger.Debugf("waitTime: %s, splayTime: %s", waitTime, splayTime)
 
 						select {
 						case <-time.After(waitTime):
-							logger.Debugf("running check %s", check.Name)
-							resultCh <- Result{
-								Check:  check,
-								Server: server,
-								Return: checks.Checks[check.Name](check, server),
-							}
 						case <-stopCh:
 							return
 						}
