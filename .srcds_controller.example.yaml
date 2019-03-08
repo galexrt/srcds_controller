@@ -6,6 +6,7 @@ servers:
   - name: YOUR_SERVER_NAME
     address: 127.0.0.1
     port: 27015
+    runnerPort: 4000
     path: YOUR_SERVER_PATH # Used as the current working directory of the commands executed
     flags:
       - -console

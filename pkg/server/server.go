@@ -63,7 +63,7 @@ func Start(cmd *cobra.Command, args []string) error {
 	if cont.ContainerJSONBase != nil && (cont.State.Status == "created" || cont.State.Status == "exited") {
 		containerID = cont.ID
 	} else {
-		index, serverCfg := config.Cfg.Servers.GetByName(serverName)
+		_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 		if serverCfg == nil {
 			return fmt.Errorf("no server config found for %s", serverName)
 		}
@@ -87,7 +87,7 @@ func Start(cmd *cobra.Command, args []string) error {
 
 		contCfg := &container.Config{
 			Env: []string{
-				fmt.Sprintf("SRCDS_RUNNER_ID=%d", index),
+				fmt.Sprintf("SRCDS_RUNNER_PORT=%d", serverCfg.RunnerPort),
 				fmt.Sprintf("SRCDS_RUNNER_AUTH_KEY=%s", serverCfg.RCON.Password),
 			},
 			Cmd:         contArgs,
@@ -212,12 +212,12 @@ func Logs(cmd *cobra.Command, args []string) error {
 }
 
 func SendCommand(serverName string, args []string) error {
-	index, serverCfg := config.Cfg.Servers.GetByName(serverName)
+	_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 	if serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:4%03d/", index), url.Values{
+	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/", serverCfg.RunnerPort), url.Values{
 		"auth-key": {serverCfg.RCON.Password},
 		"command":  {strings.Join(args, " ")},
 	})
@@ -235,12 +235,12 @@ func SendCommand(serverName string, args []string) error {
 }
 
 func UpdateRCONPassword(serverName string, password string) error {
-	index, serverCfg := config.Cfg.Servers.GetByName(serverName)
+	_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 	if serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:4%03d/rconPwUpdate", index), url.Values{
+	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/rconPwUpdate", serverCfg.RunnerPort), url.Values{
 		"auth-key": {serverCfg.RCON.Password},
 		"password": {password},
 	})

@@ -28,6 +28,7 @@ type Server struct {
 	Name          string     `yaml:"name"`
 	Address       string     `yaml:"address"`
 	Port          int        `yaml:"port"`
+	RunnerPort    int        `yaml:"runnerPort"`
 	Path          string     `yaml:"path"`
 	Flags         []string   `yaml:"flags"`
 	RunOptions    RunOptions `yaml:"runOptions"`

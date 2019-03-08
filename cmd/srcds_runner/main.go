@@ -52,15 +52,15 @@ func init() {
 func main() {
 	flag.Parse()
 
-	envRunnerID := os.Getenv("SRCDS_RUNNER_ID")
-	if envRunnerID == "" {
+	envRunnerPort := os.Getenv("SRCDS_RUNNER_PORT")
+	if envRunnerPort == "" {
 		log.Fatal("no runner ID given through env var")
 	}
 	envAuthKey = os.Getenv("SRCDS_RUNNER_AUTH_KEY")
 	if envAuthKey == "" {
 		log.Fatal("no runner auth key given through env var")
 	}
-	runnerID, err := strconv.Atoi(envRunnerID)
+	runnerPort, err := strconv.Atoi(envRunnerPort)
 	if err != nil {
 		log.Fatal("runner ID conversion from string to int failed")
 	}
@@ -69,7 +69,7 @@ func main() {
 		log.Fatal("no args given")
 	}
 
-	listenAddress := fmt.Sprintf("127.0.0.1:4%03d", runnerID)
+	listenAddress := fmt.Sprintf("127.0.0.1:%d", runnerPort)
 
 	log.Printf("starting srcds_runner on %s with following args: %+v\n", listenAddress, os.Args[1:])
 
