@@ -10,7 +10,9 @@ build:
         -X {{repoPath}}/vendor/github.com/prometheus/common/version.BuildDate={{date "20060102-15:04:05"}}
     binaries:
         - name: srcds_controller
-          path: .
+          path: ./cmd/srcds_controller
+        - name: srcds_runner
+          path: ./cmd/srcds_runner
 
 tarball:
     files:

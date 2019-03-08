@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Alexander Trost <galexrt@googlemail.com>
+Copyright 2019 Alexander Trost <galexrt@googlemail.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ var Cfg *Config
 
 // Config config file struct
 type Config struct {
+	Docker  Docker               `yaml:"docker"`
 	Servers Servers              `yaml:"servers"`
 	Checker Checker              `yaml:"checker"`
 	Checks  map[string]CheckOpts `yaml:"checks"`

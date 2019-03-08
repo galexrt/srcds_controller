@@ -14,10 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package checks
+package util
 
 import (
+	"fmt"
+
 	"github.com/galexrt/srcds_controller/pkg/config"
 )
 
-var Checks = map[string]func(check config.Check, server config.Server) bool{}
+// GetContainerName return container name prefixed and everything.
+func GetContainerName(server string) string {
+	return fmt.Sprintf("%s-%s", config.Cfg.Docker.NamePrefix, server)
+}

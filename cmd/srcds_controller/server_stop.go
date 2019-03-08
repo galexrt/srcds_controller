@@ -14,10 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package checks
+package main
 
 import (
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"time"
+
+	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var Checks = map[string]func(check config.Check, server config.Server) bool{}
+// serverStopCmd represents the stop command
+var serverStopCmd = &cobra.Command{
+	Use:   "stop",
+	Short: "Stop one or more servers",
+	Args:  cobra.MinimumNArgs(1),
+	RunE:  server.Stop,
+}
+
+func init() {
+	serverCmd.AddCommand(serverStopCmd)
+
+	serverStopCmd.PersistentFlags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
+
+	viper.BindPFlag("timeout", serverStopCmd.PersistentFlags().Lookup("timeout"))
+}

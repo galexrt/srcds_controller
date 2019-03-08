@@ -14,10 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package checks
+package main
 
 import (
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"fmt"
+	"os"
+
+	"github.com/prometheus/common/version"
+	"github.com/spf13/cobra"
 )
 
-var Checks = map[string]func(check config.Check, server config.Server) bool{}
+// checkerCmd represents the version command
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Show version info",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Print(version.Print(os.Args[0]))
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(versionCmd)
+}

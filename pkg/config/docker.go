@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package checks
+package config
 
-import (
-	"github.com/galexrt/srcds_controller/pkg/config"
-)
-
-var Checks = map[string]func(check config.Check, server config.Server) bool{}
+// Docker config options for Docker connection and/or image used.
+type Docker struct {
+	Image      string `yaml:"image"`
+	NamePrefix string `yaml:"namePrefix"`
+}

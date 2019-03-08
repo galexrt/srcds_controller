@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Alexander Trost <galexrt@googlemail.com>
+Copyright 2019 Alexander Trost <galexrt@googlemail.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,21 +25,35 @@ type Servers []Server
 
 // Server config/info for a server
 type Server struct {
-	Name       string  `yaml:"name"`
-	Address    string  `yaml:"address"`
-	Port       int     `yaml:"port"`
-	ScreenName string  `yaml:"screenName"`
-	Path       string  `yaml:"path"`
-	Checks     []Check `yaml:"checks"`
+	Name          string     `yaml:"name"`
+	Address       string     `yaml:"address"`
+	Port          int        `yaml:"port"`
+	Path          string     `yaml:"path"`
+	Flags         []string   `yaml:"flags"`
+	RunOptions    RunOptions `yaml:"runOptions"`
+	RCON          RCON       `yaml:"rcon"`
+	Checks        []Check    `yaml:"checks"`
+	OnExitCommand string     `yaml:"onExitCommand"`
+}
+
+// RunOptions run options such as user and group id to run the server as.
+type RunOptions struct {
+	UID int `yaml:"uid"`
+	GID int `yaml:"gid"`
+}
+
+// RCON rcon info
+type RCON struct {
+	Password string `yaml:"password"`
 }
 
 // GetByName return server from list by name
-func (s Servers) GetByName(name string) *Server {
+func (s Servers) GetByName(name string) (int, *Server) {
 	name = strings.ToLower(name)
-	for _, server := range s {
+	for index, server := range s {
 		if strings.ToLower(server.Name) == name {
-			return &server
+			return index, &server
 		}
 	}
-	return nil
+	return -1, nil
 }

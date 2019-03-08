@@ -14,10 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package checks
+package main
 
 import (
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"time"
+
+	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var Checks = map[string]func(check config.Check, server config.Server) bool{}
+// serverRMCmd represents the rm command
+var serverRMCmd = &cobra.Command{
+	Use:   "rm",
+	Short: "Remove one or more server containers",
+	Args:  cobra.MinimumNArgs(1),
+	RunE:  server.Remove,
+}
+
+func init() {
+	serverCmd.AddCommand(serverRMCmd)
+
+	serverRMCmd.PersistentFlags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
+
+	viper.BindPFlag("timeout", serverRMCmd.PersistentFlags().Lookup("timeout"))
+}

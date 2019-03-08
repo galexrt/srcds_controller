@@ -14,10 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package checks
+package main
 
 import (
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var Checks = map[string]func(check config.Check, server config.Server) bool{}
+// serverLogsCmd represents the logs command
+var serverLogsCmd = &cobra.Command{
+	Use:   "logs",
+	Short: "Show logs of one or more servers",
+	Args:  cobra.MinimumNArgs(1),
+	RunE:  server.Logs,
+}
+
+func init() {
+	serverCmd.AddCommand(serverLogsCmd)
+
+	serverLogsCmd.PersistentFlags().BoolP("follow", "f", true, "Follow the log stream")
+
+	viper.BindPFlag("follow", serverLogsCmd.PersistentFlags().Lookup("follow"))
+}

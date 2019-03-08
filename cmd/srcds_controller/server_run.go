@@ -14,10 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package checks
+package main
 
 import (
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/spf13/cobra"
 )
 
-var Checks = map[string]func(check config.Check, server config.Server) bool{}
+// serverRunCmd represents the run command
+var serverRunCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run a command in one or more servers consoles.",
+	Args:  cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+}
+
+func init() {
+	serverCmd.AddCommand(serverRunCmd)
+}

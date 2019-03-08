@@ -14,10 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package checks
+package main
 
 import (
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/spf13/cobra"
 )
 
-var Checks = map[string]func(check config.Check, server config.Server) bool{}
+// serverCommandCmd represents the stop command
+var serverCommandCmd = &cobra.Command{
+	Use:   "command",
+	Short: "'Align' server in regards to rcon password, logecho and others.",
+	Args:  cobra.MinimumNArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return server.SendCommand(args[0], args[1:])
+	},
+}
+
+func init() {
+	serverCmd.AddCommand(serverCommandCmd)
+}
