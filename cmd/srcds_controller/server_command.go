@@ -17,7 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"context"
+
+	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/galexrt/srcds_controller/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +31,18 @@ var serverCommandCmd = &cobra.Command{
 	Short: "'Align' server in regards to rcon password, logecho and others.",
 	Args:  cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		serverName := args[0]
+		logger.Infof("running command in server %s", serverName)
+
+		cli, err := client.NewClientWithOpts(client.FromEnv)
+		if err != nil {
+			return err
+		}
+
+		if _, err := cli.ContainerInspect(context.Background(), util.GetContainerName(serverName)); err != nil {
+			return err
+		}
+
 		return server.SendCommand(args[0], args[1:])
 	},
 }
