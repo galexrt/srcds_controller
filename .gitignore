@@ -33,3 +33,4 @@ srcds_runner
 .srcds_controller.yaml
 
 vendor.orig/
+.build/
