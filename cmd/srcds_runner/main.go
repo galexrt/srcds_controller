@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/chcloser"
 	"github.com/gin-gonic/gin"
@@ -145,14 +146,21 @@ func main() {
 		case <-sigs:
 		}
 
+		mutx.Lock()
+		defer mutx.Unlock()
+
 		if onExitCommand != "" {
 			logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
-			mutx.Lock()
 			if _, err := tty.Write([]byte(onExitCommand + "\n")); err != nil {
-				logger.Errorf("error: %s\n", err)
+				logger.Errorf("failed to write onExitCommand to server tty. %+v", err)
 			}
-			mutx.Unlock()
+
 		}
+		if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+			logger.Errorf("failed to send SIGTERM signal to server process. %+v", err)
+		}
+
+		time.Sleep(6 * time.Second)
 
 		cancel()
 	}()
