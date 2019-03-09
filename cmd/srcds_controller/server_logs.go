@@ -17,6 +17,9 @@ limitations under the License.
 package main
 
 import (
+	"bufio"
+	"fmt"
+
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -27,7 +30,18 @@ var serverLogsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "Show logs of one or more servers",
 	Args:  cobra.MinimumNArgs(1),
-	RunE:  server.Logs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		body, err := server.Logs(cmd, args)
+		if err != nil {
+			return err
+		}
+		scanner := bufio.NewScanner(body)
+		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
+
+		return scanner.Err()
+	},
 }
 
 func init() {

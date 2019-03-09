@@ -17,9 +17,9 @@ limitations under the License.
 package server
 
 import (
-	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -222,18 +222,18 @@ func Remove(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func Logs(cmd *cobra.Command, args []string) error {
+func Logs(cmd *cobra.Command, args []string) (io.ReadCloser, error) {
 	serverName := args[0]
 	logger.Infof("showing logs of server %s ...\n", serverName)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cont, err := cli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	body, err := cli.ContainerLogs(context.Background(), cont.ID, types.ContainerLogsOptions{
@@ -242,21 +242,7 @@ func Logs(cmd *cobra.Command, args []string) error {
 		ShowStdout: true,
 		Timestamps: false,
 	})
-	if err != nil {
-		return err
-	}
-	defer body.Close()
-
-	scanner := bufio.NewScanner(body)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return body, err
 }
 
 func SendCommand(serverName string, args []string) error {

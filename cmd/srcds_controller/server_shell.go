@@ -66,8 +66,17 @@ var serverShellCmd = &cobra.Command{
 					fmt.Println("No server given.")
 					break
 				}
-				if err := server.Logs(cmd, parts[1:]); err != nil {
+				if body, err := server.Logs(cmd, parts[1:]); err != nil {
 					fmt.Println(err)
+				} else {
+					go func() {
+						<-c
+						body.Close()
+					}()
+					scanner := bufio.NewScanner(body)
+					for scanner.Scan() {
+						fmt.Println(scanner.Text())
+					}
 				}
 			case "restart":
 				if len(parts) < 2 {
