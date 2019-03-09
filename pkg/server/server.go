@@ -21,12 +21,12 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/docker/docker/api/types"
@@ -43,9 +43,34 @@ import (
 
 var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "server")
 
+func List(cmd *cobra.Command, args []string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return err
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 1, 0, 1, ' ', tabwriter.Debug)
+	fmt.Fprintln(w, "Name\tPort\tContainer Status")
+	for _, serverCfg := range config.Cfg.Servers {
+		serverName := util.GetContainerName(serverCfg.Name)
+		cont, err := cli.ContainerInspect(context.Background(), serverName)
+		status := "Unknown"
+		if err != nil {
+			if !client.IsErrNotFound(err) {
+				return err
+			}
+		}
+		if cont.ContainerJSONBase != nil {
+			status = cont.State.Status
+		}
+		fmt.Fprintf(w, "%s\t%d\t%s\n", serverName, serverCfg.Port, status)
+	}
+	return w.Flush()
+}
+
 func Start(cmd *cobra.Command, args []string) error {
 	serverName := args[0]
-	logger.Infof("starting server %s\n", serverName)
+	logger.Infof("starting server %s ...\n", serverName)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -129,14 +154,14 @@ func Start(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	logger.Infof("started server %s", serverName)
+	logger.Infof("started server %s.", serverName)
 
 	return nil
 }
 
 func Stop(cmd *cobra.Command, args []string) error {
 	serverName := args[0]
-	logger.Infof("stopping server %s", serverName)
+	logger.Infof("stopping server %s ...", serverName)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -154,12 +179,29 @@ func Stop(cmd *cobra.Command, args []string) error {
 	containerID := cont.ID
 
 	duration := viper.GetDuration("timeout")
-	return cli.ContainerStop(context.Background(), containerID, &duration)
+	if err = cli.ContainerStop(context.Background(), containerID, &duration); err != nil {
+		return err
+	}
+
+	logger.Infof("stopped server %s.", serverName)
+	return nil
+}
+
+func Restart(cmd *cobra.Command, args []string) error {
+	if err := Stop(cmd, args); err != nil {
+		return err
+	}
+	if viper.GetBool("remove") {
+		if err := Remove(cmd, args); err != nil {
+			return err
+		}
+	}
+	return Start(cmd, args)
 }
 
 func Remove(cmd *cobra.Command, args []string) error {
 	serverName := args[0]
-	logger.Infof("removing server container %s", serverName)
+	logger.Infof("removing server container %s ...", serverName)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -171,12 +213,17 @@ func Remove(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return cli.ContainerRemove(context.Background(), cont.ID, types.ContainerRemoveOptions{})
+	if err = cli.ContainerRemove(context.Background(), cont.ID, types.ContainerRemoveOptions{}); err != nil {
+		return err
+	}
+
+	logger.Infof("removed server container %s.", serverName)
+	return nil
 }
 
 func Logs(cmd *cobra.Command, args []string) error {
 	serverName := args[0]
-	logger.Infof("starting server %s\n", serverName)
+	logger.Infof("showing logs of server %s ...\n", serverName)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -205,13 +252,15 @@ func Logs(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	return nil
 }
 
 func SendCommand(serverName string, args []string) error {
+	logger.Infof("sending command '%s' to server %s ...\n", strings.Join(args, " "), serverName)
+
 	_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 	if serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
@@ -222,19 +271,22 @@ func SendCommand(serverName string, args []string) error {
 		"command":  {strings.Join(args, " ")},
 	})
 	if err != nil {
-		log.Fatalln(err)
+		return fmt.Errorf("error during command exec send to server %s. %+v", serverName, err)
 	}
 	if resp.StatusCode == http.StatusOK {
+		logger.Infof("successfully sent command to server %s.\n", serverName)
 		return nil
 	}
 
 	out, _ := ioutil.ReadAll(resp.Body)
 	fmt.Println(string(out))
 
-	return fmt.Errorf("error during send command to srcds_runner for %s", serverName)
+	return fmt.Errorf("error during sending of command to srcds_runner for server %s", serverName)
 }
 
 func UpdateRCONPassword(serverName string, password string) error {
+	logger.Infof("updating RCON password for server %s ...\n", serverName)
+
 	_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 	if serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
@@ -245,9 +297,10 @@ func UpdateRCONPassword(serverName string, password string) error {
 		"password": {password},
 	})
 	if err != nil {
-		log.Fatalln(err)
+		return fmt.Errorf("error during RCON password update send to server %s. %+v", serverName, err)
 	}
 	if resp.StatusCode == http.StatusOK {
+		logger.Infof("successfully updated RCON password for server %s.\n", serverName)
 		return nil
 	}
 

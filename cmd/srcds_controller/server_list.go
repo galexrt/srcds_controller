@@ -17,19 +17,17 @@ limitations under the License.
 package main
 
 import (
+	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/spf13/cobra"
 )
 
-// serverRunCmd represents the run command
-var serverRunCmd = &cobra.Command{
-	Use:   "run",
-	Short: "Run a command in one or more servers consoles.",
-	Args:  cobra.MinimumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return nil
-	},
+// serverListCmd list all servers.
+var serverListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "Show list of one or more servers",
+	RunE:  server.List,
 }
 
 func init() {
-	serverCmd.AddCommand(serverRunCmd)
+	serverCmd.AddCommand(serverListCmd)
 }

@@ -29,17 +29,7 @@ var serverRestartCmd = &cobra.Command{
 	Use:   "restart",
 	Short: "Restart one or more servers",
 	Args:  cobra.MinimumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := server.Stop(cmd, args); err != nil {
-			return err
-		}
-		if viper.GetBool("remove") {
-			if err := server.Remove(cmd, args); err != nil {
-				return err
-			}
-		}
-		return server.Start(cmd, args)
-	},
+	RunE:  server.Restart,
 }
 
 func init() {
