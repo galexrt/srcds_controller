@@ -89,6 +89,18 @@ var serverShellCmd = &cobra.Command{
 				if err := server.Stop(cmd, parts[1:]); err != nil {
 					fmt.Println(err)
 				}
+			case "remove":
+				fallthrough
+			case "rm":
+				if len(parts) < 2 {
+					fmt.Println("No server given.")
+					break
+				}
+				if err := server.Remove(cmd, parts[1:]); err != nil {
+					fmt.Println(err)
+				}
+			case "cmd":
+				fallthrough
 			case "command":
 				if len(parts) < 2 {
 					fmt.Println("No server given.")

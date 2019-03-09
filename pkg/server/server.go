@@ -54,7 +54,7 @@ func List(cmd *cobra.Command, args []string) error {
 	for _, serverCfg := range config.Cfg.Servers {
 		serverName := util.GetContainerName(serverCfg.Name)
 		cont, err := cli.ContainerInspect(context.Background(), serverName)
-		status := "Unknown"
+		status := "Not Running"
 		if err != nil {
 			if !client.IsErrNotFound(err) {
 				return err
@@ -63,7 +63,7 @@ func List(cmd *cobra.Command, args []string) error {
 		if cont.ContainerJSONBase != nil {
 			status = cont.State.Status
 		}
-		fmt.Fprintf(w, "%s\t%d\t%s\n", serverName, serverCfg.Port, status)
+		fmt.Fprintf(w, "%s\t%d\t%s\n", strings.TrimPrefix(serverName, config.Cfg.Docker.NamePrefix+"-"), serverCfg.Port, status)
 	}
 	return w.Flush()
 }
@@ -107,6 +107,7 @@ func Start(cmd *cobra.Command, args []string) error {
 		}
 
 		for _, arg := range serverCfg.Flags {
+			arg = strings.Replace(arg, "%RCON_PASSWORD%", serverCfg.RCON.Password, -1)
 			contArgs = append(contArgs, arg)
 		}
 

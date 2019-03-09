@@ -54,7 +54,7 @@ func main() {
 
 	envRunnerPort := os.Getenv("SRCDS_RUNNER_PORT")
 	if envRunnerPort == "" {
-		log.Fatal("no runner ID given through env var")
+		log.Fatal("no runner port given through env var")
 	}
 	envAuthKey = os.Getenv("SRCDS_RUNNER_AUTH_KEY")
 	if envAuthKey == "" {
@@ -62,7 +62,7 @@ func main() {
 	}
 	runnerPort, err := strconv.Atoi(envRunnerPort)
 	if err != nil {
-		log.Fatal("runner ID conversion from string to int failed")
+		log.Fatal("runner port conversion from string to int failed")
 	}
 
 	if len(os.Args) <= 1 {
@@ -103,7 +103,10 @@ func main() {
 	r.POST("/rconPwUpdate", rconPwUpdate)
 
 	go func() {
-		r.Run(listenAddress)
+		if err = r.Run(listenAddress); err != nil {
+			log.Fatal(err)
+			return
+		}
 	}()
 
 	cmd := exec.CommandContext(ctx, os.Args[1], args...)
