@@ -87,7 +87,6 @@ var serverShellCmd = &cobra.Command{
 					fmt.Println(err)
 				}
 			case "start":
-				fmt.Println(parts)
 				if len(parts) < 2 {
 					fmt.Println("No server given.")
 					break
@@ -139,6 +138,8 @@ var serverShellCmd = &cobra.Command{
 					panic(err)
 				}
 			case "logout":
+				fallthrough
+			case "quit":
 				fallthrough
 			case "exit":
 				fmt.Println("Exiting ...")

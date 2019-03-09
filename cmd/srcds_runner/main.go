@@ -17,13 +17,11 @@ limitations under the License.
 package main
 
 import (
-	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -34,10 +32,13 @@ import (
 
 	"github.com/galexrt/srcds_controller/pkg/chcloser"
 	"github.com/gin-gonic/gin"
+	"github.com/kr/pty"
+	"go.uber.org/zap"
 )
 
 var (
-	stdin         io.WriteCloser
+	logger        *zap.SugaredLogger
+	tty           *os.File
 	out           io.Reader
 	mutx          sync.Mutex
 	onExitCommand string
@@ -50,28 +51,31 @@ func init() {
 }
 
 func main() {
+	loggerProd, _ := zap.NewDevelopment()
+	defer loggerProd.Sync()
+	logger = loggerProd.Sugar()
 	flag.Parse()
 
 	envRunnerPort := os.Getenv("SRCDS_RUNNER_PORT")
 	if envRunnerPort == "" {
-		log.Fatal("no runner port given through env var")
+		logger.Fatal("no runner port given through env var")
 	}
 	envAuthKey = os.Getenv("SRCDS_RUNNER_AUTH_KEY")
 	if envAuthKey == "" {
-		log.Fatal("no runner auth key given through env var")
+		logger.Fatal("no runner auth key given through env var")
 	}
 	runnerPort, err := strconv.Atoi(envRunnerPort)
 	if err != nil {
-		log.Fatal("runner port conversion from string to int failed")
+		logger.Fatal("runner port conversion from string to int failed")
 	}
 
 	if len(os.Args) <= 1 {
-		log.Fatal("no args given")
+		logger.Fatal("no args given")
 	}
 
 	listenAddress := fmt.Sprintf("127.0.0.1:%d", runnerPort)
 
-	log.Printf("starting srcds_runner on %s with following args: %+v\n", listenAddress, os.Args[1:])
+	logger.Infof("starting srcds_runner on %s with following args: %+v\n", listenAddress, os.Args[1:])
 
 	sigs := make(chan os.Signal, 1)
 	stopCh := make(chan struct{})
@@ -87,7 +91,7 @@ func main() {
 		}
 	}()
 	args := []string{}
-	if len(os.Args) >= 2 {
+	if len(os.Args) > 2 {
 		args = os.Args[2:]
 	}
 
@@ -104,69 +108,30 @@ func main() {
 
 	go func() {
 		if err = r.Run(listenAddress); err != nil {
-			log.Fatal(err)
+			logger.Fatal(err)
 			return
 		}
 	}()
 
 	cmd := exec.CommandContext(ctx, os.Args[1], args...)
-
-	stdin, err = cmd.StdinPipe()
+	cmd.Env = os.Environ()
+	tty, err = pty.Start(cmd)
 	if err != nil {
-		log.Printf("error: %s\n", err)
-		os.Exit(1)
+		logger.Fatal(err)
 	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Printf("error: %s\n", err)
-		chancloser.Close(stopCh)
-		return
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		fmt.Println(err)
-		chancloser.Close(stopCh)
-		os.Exit(1)
-	}
+	defer tty.Close()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		scanner := bufio.NewScanner(bufio.NewReader(stdout))
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-		if scanner.Err() != nil {
-			log.Printf("error: %s\n", scanner.Err())
-			chancloser.Close(stopCh)
-		}
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		scanner := bufio.NewScanner(bufio.NewReader(stderr))
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-		if scanner.Err() != nil {
-			log.Printf("error: %s\n", scanner.Err())
-			chancloser.Close(stopCh)
-		}
+		copyLogs(tty)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := cmd.Start(); err != nil {
-			fmt.Println(err)
-			chancloser.Close(stopCh)
-			return
-		}
-
-		if err := cmd.Wait(); err != nil {
-			log.Printf("error: %s\n", err)
+		if err = cmd.Wait(); err != nil {
+			logger.Errorf("error: %s\n", err)
 		}
 
 		chancloser.Close(stopCh)
@@ -182,10 +147,10 @@ func main() {
 		}
 
 		if onExitCommand != "" {
-			log.Printf("trying to run onExitCommand '%s'\n", onExitCommand)
+			logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
 			mutx.Lock()
-			if _, err := stdin.Write([]byte(onExitCommand + "\n")); err != nil {
-				log.Printf("error: %s\n", err)
+			if _, err := tty.Write([]byte(onExitCommand + "\n")); err != nil {
+				logger.Errorf("error: %s\n", err)
 			}
 			mutx.Unlock()
 		}
@@ -194,7 +159,7 @@ func main() {
 	}()
 
 	wg.Wait()
-	log.Println("exiting srcds_runner")
+	logger.Info("exiting srcds_runner")
 }
 
 func cmdExecute(c *gin.Context) {
@@ -225,7 +190,7 @@ func cmdExecute(c *gin.Context) {
 	}
 
 	mutx.Lock()
-	if _, err := stdin.Write([]byte(command + "\n")); err != nil {
+	if _, err := tty.Write([]byte(command + "\n")); err != nil {
 		c.String(http.StatusConflict, "error during command writing to server")
 	}
 	mutx.Unlock()
@@ -259,7 +224,7 @@ func rconPwUpdate(c *gin.Context) {
 	}
 
 	mutx.Lock()
-	if _, err := stdin.Write([]byte(fmt.Sprintf("rcon_password %s\n", password))); err != nil {
+	if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n", password))); err != nil {
 		c.String(http.StatusConflict, "error during command writing for rcon pw update to server")
 		mutx.Unlock()
 		return
@@ -267,4 +232,17 @@ func rconPwUpdate(c *gin.Context) {
 	mutx.Unlock()
 
 	envAuthKey = password
+}
+
+func copyLogs(r io.Reader) {
+	buf := make([]byte, 80)
+	for {
+		n, err := r.Read(buf)
+		if n > 0 {
+			os.Stdout.Write(buf[0:n])
+		}
+		if err != nil {
+			break
+		}
+	}
 }
