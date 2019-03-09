@@ -185,13 +185,15 @@ func Stop(cmd *cobra.Command, args []string) error {
 
 	containerID := cont.ID
 
-	logger.Infof("sending SIGTERM signal to server %s ...", serverName)
-	if err = cli.ContainerKill(context.Background(), containerID, "SIGTERM"); err != nil {
-		logger.Error(err)
-	}
-	logger.Infof("sent SIGTERM signal to server %s. now waiting for 8 seconds before continuing ...", serverName)
+	if cont.State.Running {
+		logger.Infof("sending SIGTERM signal to server %s ...", serverName)
+		if err = cli.ContainerKill(context.Background(), containerID, "SIGTERM"); err != nil {
+			logger.Error(err)
+		}
+		logger.Infof("sent SIGTERM signal to server %s. now waiting for 8 seconds before continuing ...", serverName)
 
-	time.Sleep(8 * time.Second)
+		time.Sleep(8 * time.Second)
+	}
 
 	duration := viper.GetDuration("timeout")
 	if err = cli.ContainerStop(context.Background(), containerID, &duration); err != nil {
