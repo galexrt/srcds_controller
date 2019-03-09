@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/docker/docker/api/types"
@@ -184,6 +185,14 @@ func Stop(cmd *cobra.Command, args []string) error {
 
 	containerID := cont.ID
 
+	logger.Infof("sending SIGTERM signal to server %s ...", serverName)
+	if err = cli.ContainerKill(context.Background(), containerID, "SIGTERM"); err != nil {
+		logger.Error(err)
+	}
+	logger.Infof("sent SIGTERM signal to server %s. now waiting for 8 seconds before continuing ...", serverName)
+
+	time.Sleep(8 * time.Second)
+
 	duration := viper.GetDuration("timeout")
 	if err = cli.ContainerStop(context.Background(), containerID, &duration); err != nil {
 		return err
@@ -297,4 +306,25 @@ func UpdateRCONPassword(serverName string, password string) error {
 	}
 
 	return fmt.Errorf("error during send command to srcds_runner for %s", serverName)
+}
+
+func GetServerContainer(serverName string) (types.ContainerJSON, error) {
+	var cont types.ContainerJSON
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return cont, err
+	}
+
+	cont, err = cli.ContainerInspect(context.Background(), serverName)
+	if err != nil {
+		return cont, err
+	}
+
+	return cont, nil
+}
+
+func WaitForConsoleContains(serverName string, pattern string) (bool, error) {
+	// TODO Stream the logs and return true if given pattern is found.
+
+	return true, nil
 }

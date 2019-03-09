@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	cfgFile string
 	logger  = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "main")
+	cfgFile string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -53,7 +53,6 @@ func Execute() {
 }
 
 func init() {
-	capnslog.SetGlobalLogLevel(capnslog.DEBUG)
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.srcds_controller.yaml)")
 }

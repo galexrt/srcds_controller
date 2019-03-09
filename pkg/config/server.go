@@ -35,6 +35,7 @@ type Server struct {
 	RCON          RCON       `yaml:"rcon"`
 	Checks        []Check    `yaml:"checks"`
 	OnExitCommand string     `yaml:"onExitCommand"`
+	Enabled       bool       `yaml:"enabled"`
 }
 
 // RunOptions run options such as user and group id to run the server as.

@@ -15,6 +15,7 @@ servers:
       #uid: 1001
       #gid: 1001
     onExitCommand: quit
+    enabled: true
     rcon:
       password: YOUR_RCON_PASSWORD
     checks:

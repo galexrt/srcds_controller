@@ -17,10 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"log"
+	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/galexrt/srcds_controller/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -30,12 +32,46 @@ var serverAlignerCmd = &cobra.Command{
 	Short: "'Align' server in regards to rcon password, logecho and others.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, serverCfg := range config.Cfg.Servers {
-			//server.SendCommand(serverCfg.Name, "sv_logecho 1")
-			log.Printf("aligning server %s ...", serverCfg.Name)
-			if err := server.UpdateRCONPassword(serverCfg.Name, serverCfg.RCON.Password); err != nil {
-				return err
+			logger.Infof("aligning server %s ...", serverCfg.Name)
+
+			if !serverCfg.Enabled {
+				logger.Infof("skipping server alignment for %s as is disabled", serverCfg.Name)
+				continue
 			}
-			log.Printf("aligned server %s.", serverCfg.Name)
+
+			// Check if server container is running, if not start, unless config says server disabled.
+			cont, err := server.GetServerContainer(util.GetContainerName(serverCfg.Name))
+			if err != nil && !client.IsErrNotFound(err) {
+				logger.Errorf("failed to align server %s, during get server container. %+v", serverCfg.Name, err)
+				continue
+			}
+			if client.IsErrNotFound(err) || !cont.State.Running {
+				if err := server.Start(cmd, []string{serverCfg.Name}); err != nil {
+					logger.Errorf("failed to align server %s, during try to start not running server. %+v", serverCfg.Name, err)
+					continue
+				}
+				// TODO Send command to trigger "I AM READY!" message then
+				// use server.WaitForConsoleContains() function.
+				//
+				// Right now we just sleep 32 seconds and continue.
+				found, err := server.WaitForConsoleContains(serverCfg.Name, "I AM READY!")
+				if err != nil {
+					logger.Errorf("failed to align server %s, during wait for console to contain ready signal. %+v", serverCfg.Name, err)
+					continue
+				}
+				if !found {
+					logger.Errorf("failed to align server %s, during wait for console to contain ready signal. did not find start up done signal text", serverCfg.Name)
+					continue
+				}
+				time.Sleep(32 * time.Second)
+			}
+
+			//server.SendCommand(serverCfg.Name, "sv_logecho 1")
+			if err := server.UpdateRCONPassword(serverCfg.Name, serverCfg.RCON.Password); err != nil {
+				logger.Errorf("failed to align server %s. %+v", serverCfg.Name, err)
+				continue
+			}
+			logger.Infof("aligned server %s.", serverCfg.Name)
 		}
 
 		return nil
