@@ -142,8 +142,8 @@ func main() {
 	go func() {
 		defer wg.Done()
 		select {
-		case <-stopCh:
 		case <-sigs:
+		case <-stopCh:
 		}
 
 		mutx.Lock()
@@ -154,13 +154,14 @@ func main() {
 			if _, err := tty.Write([]byte(onExitCommand + "\n")); err != nil {
 				logger.Errorf("failed to write onExitCommand to server tty. %+v", err)
 			}
-
-		}
-		if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-			logger.Errorf("failed to send SIGTERM signal to server process. %+v", err)
+			time.Sleep(6 * time.Second)
 		}
 
-		time.Sleep(6 * time.Second)
+		if cmd.Process != nil {
+			if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+				logger.Errorf("failed to send SIGTERM signal to server process. %+v", err)
+			}
+		}
 
 		cancel()
 	}()
