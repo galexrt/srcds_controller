@@ -20,7 +20,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/spf13/cobra"
@@ -42,6 +45,8 @@ var serverShellCmd = &cobra.Command{
 	Use:   "shell",
 	Short: "Shell",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
 		fmt.Print(`Welcome to srcds_controller!
 ---
 ` + helpText)
@@ -114,6 +119,21 @@ var serverShellCmd = &cobra.Command{
 				if err := server.SendCommand(serverName, parts[2:]); err != nil {
 					fmt.Println(err)
 				}
+			case "bash":
+				binary, lookErr := exec.LookPath("bash")
+				if lookErr != nil {
+					panic(lookErr)
+				}
+				args := []string{"bash"}
+				env := os.Environ()
+				if err := syscall.Exec(binary, args, env); err != nil {
+					panic(err)
+				}
+			case "logout":
+				fallthrough
+			case "exit":
+				fmt.Println("Exiting ...")
+				return nil
 			case "help":
 				fmt.Print(helpText)
 			default:

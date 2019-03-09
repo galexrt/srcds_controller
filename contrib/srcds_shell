@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec /usr/local/bin/srcds_controller server shell
