@@ -111,11 +111,16 @@ func Start(cmd *cobra.Command, args []string) error {
 			contArgs = append(contArgs, arg)
 		}
 
+		envs := []string{
+			fmt.Sprintf("SRCDS_RUNNER_PORT=%d", serverCfg.RunnerPort),
+			fmt.Sprintf("SRCDS_RUNNER_AUTH_KEY=%s", serverCfg.RCON.Password),
+		}
+		if serverCfg.OnExitCommand != "" {
+			envs = append(envs, fmt.Sprintf("SRCDS_RUNNER_ONEXIT_COMMAND=%s", serverCfg.OnExitCommand))
+		}
+
 		contCfg := &container.Config{
-			Env: []string{
-				fmt.Sprintf("SRCDS_RUNNER_PORT=%d", serverCfg.RunnerPort),
-				fmt.Sprintf("SRCDS_RUNNER_AUTH_KEY=%s", serverCfg.RCON.Password),
-			},
+			Env:         envs,
 			Cmd:         contArgs,
 			AttachStdin: true,
 			Tty:         false,

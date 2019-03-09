@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -46,15 +45,10 @@ var (
 	envAuthKey    string
 )
 
-func init() {
-	flag.StringVar(&onExitCommand, "on-exit-cmd", "", "command to run on exit (e.g., signal received)")
-}
-
 func main() {
 	loggerProd, _ := zap.NewDevelopment()
 	defer loggerProd.Sync()
 	logger = loggerProd.Sugar()
-	flag.Parse()
 
 	envRunnerPort := os.Getenv("SRCDS_RUNNER_PORT")
 	if envRunnerPort == "" {
@@ -67,6 +61,11 @@ func main() {
 	runnerPort, err := strconv.Atoi(envRunnerPort)
 	if err != nil {
 		logger.Fatal("runner port conversion from string to int failed")
+	}
+
+	onExitCommand := os.Getenv("SRCDS_RUNNER_ONEXIT_COMMAND")
+	if envRunnerPort == "" {
+		logger.Warn("no onExitCommand given through env var")
 	}
 
 	if len(os.Args) <= 1 {
