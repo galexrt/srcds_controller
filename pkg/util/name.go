@@ -24,5 +24,5 @@ import (
 
 // GetContainerName return container name prefixed and everything.
 func GetContainerName(server string) string {
-	return fmt.Sprintf("%s-%s", config.Cfg.Docker.NamePrefix, server)
+	return fmt.Sprintf("%s%s", config.Cfg.Docker.NamePrefix, server)
 }

@@ -64,7 +64,7 @@ func List(cmd *cobra.Command, args []string) error {
 		if cont.ContainerJSONBase != nil {
 			status = cont.State.Status
 		}
-		fmt.Fprintf(w, "%s\t%d\t%s\n", strings.TrimPrefix(serverName, config.Cfg.Docker.NamePrefix+"-"), serverCfg.Port, status)
+		fmt.Fprintf(w, "%s\t%d\t%s\n", strings.TrimPrefix(serverName, config.Cfg.Docker.NamePrefix), serverCfg.Port, status)
 	}
 	return w.Flush()
 }

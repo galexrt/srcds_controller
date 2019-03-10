@@ -52,7 +52,7 @@ func Run(check config.Check, server config.Server) bool {
 	}
 	defer con.Close()
 
-	out, err := con.Send("hostname")
+	out, err := con.Send("sv_lan")
 	if err != nil {
 		logger.Errorf("error executing rcon `hostname` command. %+v", err)
 		logger.Debugf("rcond `hostname` command output: %s", out)
