@@ -173,30 +173,28 @@ func main() {
 }
 
 func cmdExecute(c *gin.Context) {
-	if c.PostForm("auth-key") == "" && c.Query("auth-key") == "" {
-		c.String(http.StatusBadRequest, "No auth key given.")
-		return
-	}
 	var authKey string
 	if c.PostForm("auth-key") != "" {
 		authKey = c.PostForm("auth-key")
-	} else {
+	} else if c.Query("auth-key") != "" {
 		authKey = c.Query("auth-key")
+	} else {
+		c.String(http.StatusBadRequest, "No auth key given.")
+		return
 	}
 	if authKey != envAuthKey {
 		c.String(http.StatusForbidden, "auth key not matching.")
 		return
 	}
 
-	if c.PostForm("command") == "" && c.Query("command") == "" {
-		c.String(http.StatusBadRequest, "No command given.")
-		return
-	}
 	var command string
 	if c.PostForm("command") != "" {
 		command = c.PostForm("command")
-	} else {
+	} else if c.Query("command") != "" {
 		command = c.Query("command")
+	} else {
+		c.String(http.StatusBadRequest, "No command given.")
+		return
 	}
 
 	mutx.Lock()
@@ -207,36 +205,34 @@ func cmdExecute(c *gin.Context) {
 }
 
 func rconPwUpdate(c *gin.Context) {
-	if c.PostForm("auth-key") == "" && c.Query("auth-key") == "" {
-		c.String(http.StatusBadRequest, "No auth key given.")
-		return
-	}
 	var authKey string
 	if c.PostForm("auth-key") != "" {
 		authKey = c.PostForm("auth-key")
-	} else {
+	} else if c.Query("auth-key") != "" {
 		authKey = c.Query("auth-key")
+	} else {
+		c.String(http.StatusBadRequest, "No auth key given.")
+		return
 	}
 	if authKey != envAuthKey {
 		c.String(http.StatusForbidden, "auth key not matching.")
 		return
 	}
 
-	if c.PostForm("password") == "" && c.Query("password") == "" {
-		c.String(http.StatusBadRequest, "No password given.")
-		return
-	}
 	var password string
 	if c.PostForm("password") != "" {
 		password = c.PostForm("password")
-	} else {
+	} else if c.Query("password") == "" {
 		password = c.Query("password")
+	} else {
+		c.String(http.StatusBadRequest, "No password given.")
+		return
 	}
 
 	mutx.Lock()
 	if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n", password))); err != nil {
-		c.String(http.StatusConflict, "error during command writing for rcon pw update to server")
 		mutx.Unlock()
+		c.String(http.StatusConflict, "error during command writing for rcon pw update to server")
 		return
 	}
 	mutx.Unlock()
