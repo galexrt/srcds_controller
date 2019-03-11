@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -30,6 +31,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/acarl005/stripansi"
 	"github.com/galexrt/srcds_controller/pkg/chcloser"
 	"github.com/gin-gonic/gin"
 	"github.com/kr/pty"
@@ -243,14 +245,11 @@ func rconPwUpdate(c *gin.Context) {
 }
 
 func copyLogs(r io.Reader) {
-	buf := make([]byte, 80)
-	for {
-		n, err := r.Read(buf)
-		if n > 0 {
-			os.Stdout.Write(buf[0:n])
-		}
-		if err != nil {
-			break
-		}
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		os.Stdout.Write([]byte(stripansi.Strip(scanner.Text())))
+	}
+	if scanner.Err() != nil {
+		logger.Error(scanner.Err())
 	}
 }
