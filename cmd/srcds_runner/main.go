@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -77,7 +76,7 @@ func main() {
 
 	listenAddress := fmt.Sprintf("127.0.0.1:%d", runnerPort)
 
-	logger.Infof("starting srcds_runner on %s with following args: %+v\n", listenAddress, os.Args[1:])
+	logger.Infof("starting srcds_runner on %s with following args: %+v", listenAddress, os.Args[1:])
 
 	sigs := make(chan os.Signal, 1)
 	stopCh := make(chan struct{})
@@ -121,11 +120,22 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	defer tty.Close()
+	defer func() {
+		if tty == nil {
+			logger.Error("failed to close tty as it is nil")
+			return
+		}
+		if err = tty.Close(); err != nil {
+			logger.Error(err)
+			return
+		}
+	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		logger.Info("beginning to stream logs")
+		logger.Info("---")
 		copyLogs(tty)
 	}()
 
@@ -151,13 +161,21 @@ func main() {
 		mutx.Lock()
 		defer mutx.Unlock()
 
-		if onExitCommand != "" {
-			logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
-			if _, err := tty.Write([]byte(onExitCommand + "\n")); err != nil {
-				logger.Errorf("failed to write onExitCommand to server tty. %+v", err)
+		if tty == nil {
+			logger.Error("cmd tty is (already) nil")
+		} else {
+			if onExitCommand != "" {
+				logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
+
+				if _, err := tty.Write([]byte("\n\n" + onExitCommand + "\n")); err != nil {
+					logger.Errorf("failed to write onExitCommand to server tty. %+v", err)
+				}
+				time.Sleep(5 * time.Second)
+				mutx.Unlock()
 			}
-			time.Sleep(6 * time.Second)
 		}
+
+		time.Sleep(500 * time.Millisecond)
 
 		if cmd.Process != nil {
 			if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
@@ -197,6 +215,11 @@ func cmdExecute(c *gin.Context) {
 		return
 	}
 
+	if tty == nil {
+		c.String(http.StatusInternalServerError, "cmd tty is nil")
+		return
+	}
+
 	mutx.Lock()
 	if _, err := tty.Write([]byte(command + "\n")); err != nil {
 		c.String(http.StatusConflict, "error during command writing to server")
@@ -229,6 +252,10 @@ func rconPwUpdate(c *gin.Context) {
 		return
 	}
 
+	if tty == nil {
+		c.String(http.StatusInternalServerError, "cmd tty is nil")
+		return
+	}
 	mutx.Lock()
 	if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n", password))); err != nil {
 		mutx.Unlock()
@@ -240,12 +267,25 @@ func rconPwUpdate(c *gin.Context) {
 	envAuthKey = password
 }
 
-func copyLogs(r io.Reader) {
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		os.Stdout.Write([]byte(stripansi.Strip(scanner.Text())))
-	}
-	if scanner.Err() != nil {
-		logger.Error(scanner.Err())
+func copyLogs(r io.Reader) error {
+	buf := make([]byte, 512)
+	for {
+		n, err := r.Read(buf)
+		if n > 0 {
+			os.Stdout.Write([]byte(
+				stripansi.Strip(
+					string(buf[0:n]),
+				),
+			),
+			)
+		}
+		if err == io.EOF {
+			logger.Info("copyLogs: received EOF from given log source")
+			return nil
+		}
+		if err != nil {
+			logger.Error(err)
+			return err
+		}
 	}
 }
