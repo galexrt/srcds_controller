@@ -159,7 +159,6 @@ func main() {
 		}
 
 		mutx.Lock()
-		defer mutx.Unlock()
 
 		if tty == nil {
 			logger.Error("cmd tty is (already) nil")
@@ -171,7 +170,6 @@ func main() {
 					logger.Errorf("failed to write onExitCommand to server tty. %+v", err)
 				}
 				time.Sleep(5 * time.Second)
-				mutx.Unlock()
 			}
 		}
 
