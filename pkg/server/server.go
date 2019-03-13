@@ -190,9 +190,9 @@ func Stop(cmd *cobra.Command, args []string) error {
 		if err = cli.ContainerKill(context.Background(), containerID, "SIGTERM"); err != nil {
 			logger.Error(err)
 		}
-		logger.Infof("sent SIGTERM signal to server %s. now waiting for 8 seconds before continuing ...", serverName)
+		logger.Infof("sent SIGTERM signal to server %s. now waiting for 6 seconds before continuing ...", serverName)
 
-		time.Sleep(8 * time.Second)
+		time.Sleep(6 * time.Second)
 	}
 
 	duration := viper.GetDuration("timeout")

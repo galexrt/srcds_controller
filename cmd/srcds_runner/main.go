@@ -135,7 +135,6 @@ func main() {
 	go func() {
 		defer wg.Done()
 		logger.Info("beginning to stream logs")
-		logger.Info("---")
 		copyLogs(tty)
 	}()
 
