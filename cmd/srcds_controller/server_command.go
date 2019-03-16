@@ -17,33 +17,57 @@ limitations under the License.
 package main
 
 import (
-	"context"
+	"fmt"
+	"sync"
 
-	"github.com/docker/docker/client"
+	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/galexrt/srcds_controller/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverCommandCmd represents the stop command
 var serverCommandCmd = &cobra.Command{
-	Use:   "command",
-	Short: "'Align' server in regards to rcon password, logecho and others.",
-	Args:  cobra.MinimumNArgs(2),
+	Use:               "command",
+	Short:             "Send a command to one or more servers",
+	Args:              cobra.MinimumNArgs(1),
+	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		serverName := args[0]
-		logger.Infof("running command in server %s", serverName)
-
-		cli, err := client.NewClientWithOpts(client.FromEnv)
-		if err != nil {
+		var errs util.Errors
+		var servers []string
+		if viper.GetBool("all") {
+			for _, srv := range config.Cfg.Servers {
+				servers = append(servers, srv.Name)
+			}
+		} else {
+			servers = viper.GetStringSlice("servers")
+		}
+		if len(servers) == 0 {
+			return fmt.Errorf("no server list given (`--servers=SERVER_A,SERVER_B`) or `--all` flag not given (can also mean that no servers are in the config)")
+		}
+		wg := sync.WaitGroup{}
+		for _, serverName := range servers {
+			wg.Add(1)
+			go func(serverName string) {
+				defer wg.Done()
+				if err := server.SendCommand(serverName, args); err != nil {
+					errs.Lock()
+					errs.Errs = append(errs.Errs, err)
+					errs.Unlock()
+				}
+			}(serverName)
+		}
+		wg.Wait()
+		if len(errs.Errs) > 0 {
+			err := errors.New("error occured")
+			for _, erro := range errs.Errs {
+				err = errors.Wrap(err, erro.Error())
+			}
 			return err
 		}
-
-		if _, err := cli.ContainerInspect(context.Background(), util.GetContainerName(serverName)); err != nil {
-			return err
-		}
-
-		return server.SendCommand(args[0], args[1:])
+		return nil
 	},
 }
 

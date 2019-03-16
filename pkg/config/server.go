@@ -30,12 +30,14 @@ type Server struct {
 	Port          int        `yaml:"port"`
 	RunnerPort    int        `yaml:"runnerPort"`
 	Path          string     `yaml:"path"`
+	MountsDir     string     `yaml:"mountsDir"`
 	Flags         []string   `yaml:"flags"`
 	RunOptions    RunOptions `yaml:"runOptions"`
 	RCON          RCON       `yaml:"rcon"`
 	Checks        []Check    `yaml:"checks"`
 	OnExitCommand string     `yaml:"onExitCommand"`
 	Enabled       bool       `yaml:"enabled"`
+	GameID        int64      `yaml:"gameID"`
 }
 
 // RunOptions run options such as user and group id to run the server as.

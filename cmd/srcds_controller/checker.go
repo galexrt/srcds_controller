@@ -31,8 +31,9 @@ import (
 
 // checkerCmd represents the checker command
 var checkerCmd = &cobra.Command{
-	Use:   "checker",
-	Short: "Run the srcd server checker",
+	Use:    "checker",
+	Short:  "Run the srcd server checker",
+	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		stopCh := make(chan struct{})
 		sigCh := make(chan os.Signal)

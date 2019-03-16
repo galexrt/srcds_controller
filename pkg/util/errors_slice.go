@@ -14,23 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package util
 
-import (
-	"github.com/galexrt/srcds_controller/pkg/server"
-	"github.com/spf13/cobra"
-)
+import "sync"
 
-// serverListCmd list all servers.
-var serverListCmd = &cobra.Command{
-	Use:               "list",
-	Short:             "Show list of one or more servers",
-	PersistentPreRunE: initDockerCli,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return server.List()
-	},
-}
-
-func init() {
-	serverCmd.AddCommand(serverListCmd)
+type Errors struct {
+	sync.Mutex
+	Errs []error
 }

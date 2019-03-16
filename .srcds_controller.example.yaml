@@ -18,6 +18,7 @@ servers:
     enabled: true
     rcon:
       password: YOUR_RCON_PASSWORD
+    gameID: 4000
     checks:
       - name: rcon
         opts:

@@ -28,8 +28,10 @@ import (
 
 // serverAlignerCmd represents the aligner command
 var serverAlignerCmd = &cobra.Command{
-	Use:   "aligner",
-	Short: "'Align' server in regards to rcon password, logecho and others.",
+	Use:               "aligner",
+	Short:             "'Align' server in regards to rcon password, logecho and others.",
+	Hidden:            true,
+	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, serverCfg := range config.Cfg.Servers {
 			logger.Infof("aligning server %s ...", serverCfg.Name)
@@ -46,7 +48,7 @@ var serverAlignerCmd = &cobra.Command{
 				continue
 			}
 			if client.IsErrNotFound(err) || !cont.State.Running {
-				if err := server.Start(cmd, []string{serverCfg.Name}); err != nil {
+				if err := server.Start(serverCfg.Name); err != nil {
 					logger.Errorf("failed to align server %s, during try to start not running server. %+v", serverCfg.Name, err)
 					continue
 				}

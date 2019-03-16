@@ -27,7 +27,6 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
-	"time"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/docker/docker/api/types"
@@ -38,23 +37,20 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/util"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "server")
+var (
+	logger    = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "server")
+	DockerCli *client.Client
+)
 
-func List(cmd *cobra.Command, args []string) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		return err
-	}
-
+func List() error {
 	w := tabwriter.NewWriter(os.Stdout, 1, 0, 1, ' ', tabwriter.Debug)
 	fmt.Fprintln(w, "Name\tPort\tContainer Status")
 	for _, serverCfg := range config.Cfg.Servers {
 		serverName := util.GetContainerName(serverCfg.Name)
-		cont, err := cli.ContainerInspect(context.Background(), serverName)
+		cont, err := DockerCli.ContainerInspect(context.Background(), serverName)
 		status := "Not Running"
 		if err != nil {
 			if !client.IsErrNotFound(err) {
@@ -69,16 +65,14 @@ func List(cmd *cobra.Command, args []string) error {
 	return w.Flush()
 }
 
-func Start(cmd *cobra.Command, args []string) error {
-	serverName := args[0]
+func Start(serverName string) error {
 	logger.Infof("starting server %s ...\n", serverName)
 
-	cli, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		return err
+	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
+		return fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	cont, err := cli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil && !client.IsErrNotFound(err) {
 		return err
 	} else if err == nil && (cont.State.Status != "created" && cont.State.Status != "exited") {
@@ -94,6 +88,7 @@ func Start(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("no server config found for %s", serverName)
 		}
 		serverDir := serverCfg.Path
+		mountDir := serverCfg.MountsDir
 
 		var hostname string
 		hostname, err = os.Hostname()
@@ -129,7 +124,7 @@ func Start(cmd *cobra.Command, args []string) error {
 			Hostname:    hostname,
 			User:        fmt.Sprintf("%d:%d", serverCfg.RunOptions.UID, serverCfg.RunOptions.GID),
 			Image:       config.Cfg.Docker.Image,
-			WorkingDir:  serverCfg.Path,
+			WorkingDir:  serverDir,
 		}
 		contHostCfg := &container.HostConfig{
 			RestartPolicy: container.RestartPolicy{
@@ -145,8 +140,17 @@ func Start(cmd *cobra.Command, args []string) error {
 			},
 			NetworkMode: "host",
 		}
+		if mountDir != "" {
+			contHostCfg.Mounts = append(contHostCfg.Mounts, mount.Mount{
+				Type:   mount.TypeBind,
+				Source: mountDir,
+				Target: mountDir,
+			})
+		}
+
 		netCfg := &network.NetworkingConfig{}
-		resp, err := cli.ContainerCreate(context.Background(), contCfg, contHostCfg, netCfg, util.GetContainerName(serverName))
+		var resp container.ContainerCreateCreatedBody
+		resp, err = DockerCli.ContainerCreate(context.Background(), contCfg, contHostCfg, netCfg, util.GetContainerName(serverName))
 		if err != nil {
 			return err
 		}
@@ -157,7 +161,7 @@ func Start(cmd *cobra.Command, args []string) error {
 		containerID = resp.ID
 	}
 
-	if err = cli.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{}); err != nil {
+	if err = DockerCli.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 
@@ -166,16 +170,14 @@ func Start(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func Stop(cmd *cobra.Command, args []string) error {
-	serverName := args[0]
+func Stop(serverName string) error {
 	logger.Infof("stopping server %s ...", serverName)
 
-	cli, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		return err
+	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
+		return fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	cont, err := cli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil {
 		if client.IsErrNotFound(err) {
 			return nil
@@ -187,16 +189,14 @@ func Stop(cmd *cobra.Command, args []string) error {
 
 	if cont.State.Running {
 		logger.Infof("sending SIGTERM signal to server %s ...", serverName)
-		if err = cli.ContainerKill(context.Background(), containerID, "SIGTERM"); err != nil {
+		if err = DockerCli.ContainerKill(context.Background(), containerID, "SIGTERM"); err != nil {
 			logger.Error(err)
 		}
-		logger.Infof("sent SIGTERM signal to server %s. now waiting for 6 seconds before continuing ...", serverName)
-
-		time.Sleep(6 * time.Second)
+		logger.Infof("sent SIGTERM signal to server %s. now waiting at maximum 5 before sending kill signal ...", serverName)
 	}
 
 	duration := viper.GetDuration("timeout")
-	if err = cli.ContainerStop(context.Background(), containerID, &duration); err != nil {
+	if err = DockerCli.ContainerStop(context.Background(), containerID, &duration); err != nil {
 		return err
 	}
 
@@ -204,33 +204,31 @@ func Stop(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func Restart(cmd *cobra.Command, args []string) error {
-	if err := Stop(cmd, args); err != nil {
+func Restart(serverName string) error {
+	if err := Stop(serverName); err != nil {
 		return err
 	}
 	if viper.GetBool("remove") {
-		if err := Remove(cmd, args); err != nil {
+		if err := Remove(serverName); err != nil {
 			return err
 		}
 	}
-	return Start(cmd, args)
+	return Start(serverName)
 }
 
-func Remove(cmd *cobra.Command, args []string) error {
-	serverName := args[0]
+func Remove(serverName string) error {
 	logger.Infof("removing server container %s ...", serverName)
 
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
+		return fmt.Errorf("no server config found for %s", serverName)
+	}
+
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil {
 		return err
 	}
 
-	cont, err := cli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
-	if err != nil {
-		return err
-	}
-
-	if err = cli.ContainerRemove(context.Background(), cont.ID, types.ContainerRemoveOptions{}); err != nil {
+	if err = DockerCli.ContainerRemove(context.Background(), cont.ID, types.ContainerRemoveOptions{}); err != nil {
 		return err
 	}
 
@@ -238,25 +236,24 @@ func Remove(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func Logs(cmd *cobra.Command, args []string) (io.ReadCloser, error) {
-	serverName := args[0]
+func Logs(serverName string, tail int) (io.ReadCloser, error) {
 	logger.Infof("showing logs of server %s ...\n", serverName)
 
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
+		return nil, fmt.Errorf("no server config found for %s", serverName)
+	}
+
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil {
 		return nil, err
 	}
 
-	cont, err := cli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := cli.ContainerLogs(context.Background(), cont.ID, types.ContainerLogsOptions{
+	body, err := DockerCli.ContainerLogs(context.Background(), cont.ID, types.ContainerLogsOptions{
 		Follow:     viper.GetBool("follow"),
 		ShowStderr: true,
 		ShowStdout: true,
 		Timestamps: false,
+		Tail:       strconv.Itoa(tail),
 	})
 	return body, err
 }
@@ -267,6 +264,10 @@ func SendCommand(serverName string, args []string) error {
 	_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 	if serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
+	}
+
+	if _, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName)); err != nil {
+		return err
 	}
 
 	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/", serverCfg.RunnerPort), url.Values{
@@ -311,13 +312,14 @@ func UpdateRCONPassword(serverName string, password string) error {
 }
 
 func GetServerContainer(serverName string) (types.ContainerJSON, error) {
+	var err error
 	var cont types.ContainerJSON
-	cli, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		return cont, err
+
+	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
+		return cont, fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	cont, err = cli.ContainerInspect(context.Background(), serverName)
+	cont, err = DockerCli.ContainerInspect(context.Background(), serverName)
 	if err != nil {
 		return cont, err
 	}

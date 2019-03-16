@@ -27,14 +27,20 @@ import (
 
 // serverLogsCmd represents the logs command
 var serverLogsCmd = &cobra.Command{
-	Use:   "logs",
-	Short: "Show logs of one or more servers",
-	Args:  cobra.MinimumNArgs(1),
+	Use:               "logs",
+	Short:             "Show logs of one or more servers",
+	Args:              cobra.MinimumNArgs(1),
+	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		body, err := server.Logs(cmd, args)
+		serverName := args[0]
+		body, err := server.Logs(serverName, viper.GetInt("tail"))
 		if err != nil {
 			return err
 		}
+		if body == nil {
+			return fmt.Errorf("server.Logs returned nil body. something is wrong")
+		}
+
 		scanner := bufio.NewScanner(body)
 		for scanner.Scan() {
 			fmt.Println(scanner.Text())
@@ -45,9 +51,10 @@ var serverLogsCmd = &cobra.Command{
 }
 
 func init() {
-	serverCmd.AddCommand(serverLogsCmd)
-
 	serverLogsCmd.PersistentFlags().BoolP("follow", "f", true, "Follow the log stream")
-
+	serverLogsCmd.PersistentFlags().Int("tail", 75, "How many lines to show from the past")
+	viper.BindPFlag("tail", serverLogsCmd.PersistentFlags().Lookup("tail"))
 	viper.BindPFlag("follow", serverLogsCmd.PersistentFlags().Lookup("follow"))
+
+	serverCmd.AddCommand(serverLogsCmd)
 }

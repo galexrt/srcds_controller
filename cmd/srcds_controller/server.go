@@ -17,15 +17,32 @@ limitations under the License.
 package main
 
 import (
+	"github.com/docker/docker/client"
+	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "A brief description of your command",
+	Short: "server control/management subcommand section",
 }
 
 func init() {
+	serverCmd.PersistentFlags().StringSlice("servers", []string{}, "Comma separated list of servers")
+	serverCmd.PersistentFlags().Bool("all", false, "If all servers should be used")
+	viper.BindPFlag("servers", serverCmd.PersistentFlags().Lookup("servers"))
+	viper.BindPFlag("all", serverCmd.PersistentFlags().Lookup("all"))
+
 	rootCmd.AddCommand(serverCmd)
+}
+
+func initDockerCli(cmd *cobra.Command, args []string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return err
+	}
+	server.DockerCli = cli
+	return err
 }
