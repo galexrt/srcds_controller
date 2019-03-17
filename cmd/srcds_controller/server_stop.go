@@ -33,7 +33,6 @@ import (
 var serverStopCmd = &cobra.Command{
 	Use:               "stop",
 	Short:             "Stop one or more servers",
-	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var errs util.Errors

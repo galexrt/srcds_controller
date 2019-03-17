@@ -112,6 +112,12 @@ var serverToolsNiceRestart = &cobra.Command{
 							errs.Errs = append(errs.Errs, err)
 							errs.Unlock()
 						}
+						time.Sleep(500 * time.Millisecond)
+						if err := server.Start(serverName); err != nil {
+							errs.Lock()
+							errs.Errs = append(errs.Errs, err)
+							errs.Unlock()
+						}
 					}(serverName)
 				}
 				wg.Wait()

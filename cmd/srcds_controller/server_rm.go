@@ -32,7 +32,6 @@ import (
 var serverRMCmd = &cobra.Command{
 	Use:               "rm",
 	Short:             "Remove one or more server containers",
-	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var errs util.Errors
