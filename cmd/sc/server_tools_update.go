@@ -112,7 +112,7 @@ var serverToolsUpdate = &cobra.Command{
 		wg.Wait()
 
 		if len(errs.Errs) > 0 {
-			err := errors.New("error occured")
+			err := errors.New("error occured during server (tools) update")
 			for _, erro := range errs.Errs {
 				err = errors.Wrap(err, erro.Error())
 			}

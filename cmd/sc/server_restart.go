@@ -45,7 +45,7 @@ var serverRestartCmd = &cobra.Command{
 			servers = viper.GetStringSlice("servers")
 		}
 		if len(servers) == 0 {
-			return fmt.Errorf("no server list given (`--servers=SERVER_A,SERVER_B`) or `--all` flag not given (can also mean that no servers are in the config)")
+			return fmt.Errorf("no server(s) given, please provide a server list using `-s SERVER_A,SERVER_B` or `--all` flag")
 		}
 		wg := sync.WaitGroup{}
 		for _, serverName := range servers {
@@ -61,7 +61,7 @@ var serverRestartCmd = &cobra.Command{
 		}
 		wg.Wait()
 		if len(errs.Errs) > 0 {
-			err := errors.New("error occured")
+			err := errors.New("error occured during restart")
 			for _, erro := range errs.Errs {
 				err = errors.Wrap(err, erro.Error())
 			}
@@ -75,5 +75,5 @@ func init() {
 	serverRestartCmd.PersistentFlags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
 	viper.BindPFlag("timeout", serverRestartCmd.PersistentFlags().Lookup("timeout"))
 
-	serverCmd.AddCommand(serverRestartCmd)
+	rootCmd.AddCommand(serverRestartCmd)
 }

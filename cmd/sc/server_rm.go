@@ -28,11 +28,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-// serverCommandCmd represents the stop command
-var serverCommandCmd = &cobra.Command{
-	Use:               "command",
-	Short:             "Send a command to one or more servers",
-	Args:              cobra.MinimumNArgs(1),
+// serverRMCmd represents the rm command
+var serverRMCmd = &cobra.Command{
+	Use:               "rm",
+	Hidden:            true,
+	Short:             "Remove one or more server containers",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var errs util.Errors
@@ -52,7 +52,7 @@ var serverCommandCmd = &cobra.Command{
 			wg.Add(1)
 			go func(serverName string) {
 				defer wg.Done()
-				if err := server.SendCommand(serverName, args); err != nil {
+				if err := server.Remove(serverName); err != nil {
 					errs.Lock()
 					errs.Errs = append(errs.Errs, err)
 					errs.Unlock()
@@ -61,7 +61,7 @@ var serverCommandCmd = &cobra.Command{
 		}
 		wg.Wait()
 		if len(errs.Errs) > 0 {
-			err := errors.New("error occured")
+			err := errors.New("error occured during server rm")
 			for _, erro := range errs.Errs {
 				err = errors.Wrap(err, erro.Error())
 			}
@@ -72,5 +72,5 @@ var serverCommandCmd = &cobra.Command{
 }
 
 func init() {
-	serverCmd.AddCommand(serverCommandCmd)
+	rootCmd.AddCommand(serverRMCmd)
 }

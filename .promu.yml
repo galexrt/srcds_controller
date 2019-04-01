@@ -9,6 +9,8 @@ build:
         -X {{repoPath}}/vendor/github.com/prometheus/common/version.BuildUser={{user}}@{{host}}
         -X {{repoPath}}/vendor/github.com/prometheus/common/version.BuildDate={{date "20060102-15:04:05"}}
     binaries:
+        - name: sc
+          path: ./cmd/sc
         - name: srcds_controller
           path: ./cmd/srcds_controller
         - name: srcds_runner

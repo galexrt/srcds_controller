@@ -28,10 +28,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-// serverStartCmd represents the start command
-var serverStartCmd = &cobra.Command{
-	Use:               "start",
-	Short:             "Start one or more servers",
+// serverCommandCmd represents the stop command
+var serverCommandCmd = &cobra.Command{
+	Use: "command",
+	Aliases: []string{
+		"cmd",
+		"c",
+	},
+	Short:             "Send a command to one or more servers",
+	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var errs util.Errors
@@ -51,7 +56,7 @@ var serverStartCmd = &cobra.Command{
 			wg.Add(1)
 			go func(serverName string) {
 				defer wg.Done()
-				if err := server.Start(serverName); err != nil {
+				if err := server.SendCommand(serverName, args); err != nil {
 					errs.Lock()
 					errs.Errs = append(errs.Errs, err)
 					errs.Unlock()
@@ -60,7 +65,7 @@ var serverStartCmd = &cobra.Command{
 		}
 		wg.Wait()
 		if len(errs.Errs) > 0 {
-			err := errors.New("error occured")
+			err := errors.New("error occured during command sending")
 			for _, erro := range errs.Errs {
 				err = errors.Wrap(err, erro.Error())
 			}
@@ -71,5 +76,5 @@ var serverStartCmd = &cobra.Command{
 }
 
 func init() {
-	serverCmd.AddCommand(serverStartCmd)
+	rootCmd.AddCommand(serverCommandCmd)
 }

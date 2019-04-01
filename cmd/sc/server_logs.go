@@ -52,9 +52,9 @@ var serverLogsCmd = &cobra.Command{
 
 func init() {
 	serverLogsCmd.PersistentFlags().BoolP("follow", "f", true, "Follow the log stream")
-	serverLogsCmd.PersistentFlags().Int("tail", 75, "How many lines to show from the past")
+	serverLogsCmd.PersistentFlags().IntP("tail", "t", 75, "How many lines to show from the past")
 	viper.BindPFlag("tail", serverLogsCmd.PersistentFlags().Lookup("tail"))
 	viper.BindPFlag("follow", serverLogsCmd.PersistentFlags().Lookup("follow"))
 
-	serverCmd.AddCommand(serverLogsCmd)
+	rootCmd.AddCommand(serverLogsCmd)
 }

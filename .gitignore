@@ -26,6 +26,8 @@ _testmain.go
 _build/
 _cache/
 dist/
+sc
+!sc/
 srcds_controller
 !srcds_controller/
 srcds_runner

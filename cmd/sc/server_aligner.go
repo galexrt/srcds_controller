@@ -81,5 +81,5 @@ var serverAlignerCmd = &cobra.Command{
 }
 
 func init() {
-	serverCmd.AddCommand(serverAlignerCmd)
+	rootCmd.AddCommand(serverAlignerCmd)
 }

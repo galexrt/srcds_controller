@@ -19,7 +19,6 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
@@ -29,10 +28,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-// serverStopCmd represents the stop command
-var serverStopCmd = &cobra.Command{
-	Use:               "stop",
-	Short:             "Stop one or more servers",
+// serverStartCmd represents the start command
+var serverStartCmd = &cobra.Command{
+	Use:               "start",
+	Short:             "Start one or more servers",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var errs util.Errors
@@ -52,7 +51,7 @@ var serverStopCmd = &cobra.Command{
 			wg.Add(1)
 			go func(serverName string) {
 				defer wg.Done()
-				if err := server.Stop(serverName); err != nil {
+				if err := server.Start(serverName); err != nil {
 					errs.Lock()
 					errs.Errs = append(errs.Errs, err)
 					errs.Unlock()
@@ -61,7 +60,7 @@ var serverStopCmd = &cobra.Command{
 		}
 		wg.Wait()
 		if len(errs.Errs) > 0 {
-			err := errors.New("error occured")
+			err := errors.New("error occured during server start")
 			for _, erro := range errs.Errs {
 				err = errors.Wrap(err, erro.Error())
 			}
@@ -72,8 +71,5 @@ var serverStopCmd = &cobra.Command{
 }
 
 func init() {
-	serverStopCmd.PersistentFlags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
-	viper.BindPFlag("timeout", serverStopCmd.PersistentFlags().Lookup("timeout"))
-
-	serverCmd.AddCommand(serverStopCmd)
+	rootCmd.AddCommand(serverStartCmd)
 }

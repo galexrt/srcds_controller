@@ -23,19 +23,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-// serverCmd represents the server command
-var serverCmd = &cobra.Command{
-	Use:   "server",
-	Short: "server control/management subcommand section",
-}
-
 func init() {
-	serverCmd.PersistentFlags().StringSlice("servers", []string{}, "Comma separated list of servers")
-	serverCmd.PersistentFlags().Bool("all", false, "If all servers should be used")
-	viper.BindPFlag("servers", serverCmd.PersistentFlags().Lookup("servers"))
-	viper.BindPFlag("all", serverCmd.PersistentFlags().Lookup("all"))
-
-	rootCmd.AddCommand(serverCmd)
+	rootCmd.PersistentFlags().StringSliceP("servers", "s", []string{}, "Comma separated list of servers")
+	rootCmd.PersistentFlags().BoolP("all", "a", false, "If all servers should be used")
+	viper.BindPFlag("servers", rootCmd.PersistentFlags().Lookup("servers"))
+	viper.BindPFlag("all", rootCmd.PersistentFlags().Lookup("all"))
 }
 
 func initDockerCli(cmd *cobra.Command, args []string) error {

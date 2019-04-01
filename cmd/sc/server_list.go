@@ -17,15 +17,23 @@ limitations under the License.
 package main
 
 import (
+	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/spf13/cobra"
 )
 
-// serverToolsCmd represents the server tools subcommand
-var serverToolsCmd = &cobra.Command{
-	Use:   "tools",
-	Short: "server tools management subcommand section",
+// serverListCmd list all servers.
+var serverListCmd = &cobra.Command{
+	Use: "list",
+	Aliases: []string{
+		"ls",
+	},
+	Short:             "Show list of one or more servers",
+	PersistentPreRunE: initDockerCli,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return server.List()
+	},
 }
 
 func init() {
-	serverCmd.AddCommand(serverToolsCmd)
+	rootCmd.AddCommand(serverListCmd)
 }
