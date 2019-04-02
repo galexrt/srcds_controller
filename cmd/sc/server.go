@@ -23,11 +23,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	// AllServers key to get all servers
+	AllServers = "all"
+)
+
 func init() {
-	rootCmd.PersistentFlags().StringSliceP("servers", "s", []string{}, "Comma separated list of servers")
-	rootCmd.PersistentFlags().BoolP("all", "a", false, "If all servers should be used")
-	viper.BindPFlag("servers", rootCmd.PersistentFlags().Lookup("servers"))
-	viper.BindPFlag("all", rootCmd.PersistentFlags().Lookup("all"))
+	rootCmd.PersistentFlags().BoolP(AllServers, "a", false, "If all servers should be used")
+	viper.BindPFlag(AllServers, rootCmd.PersistentFlags().Lookup(AllServers))
 }
 
 func initDockerCli(cmd *cobra.Command, args []string) error {

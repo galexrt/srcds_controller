@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,15 +43,15 @@ var serverToolsNiceRestart = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var errs util.Errors
 		var servers []string
-		if viper.GetBool("all") {
+		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
 			for _, srv := range config.Cfg.Servers {
 				servers = append(servers, srv.Name)
 			}
 		} else {
-			servers = viper.GetStringSlice("servers")
+			servers = strings.Split(args[0], ",")
 		}
 		if len(servers) == 0 {
-			return fmt.Errorf("no server list given (`--servers=SERVER_A,SERVER_B`) or `--all` flag not given (can also mean that no servers are in the config)")
+			return fmt.Errorf("no server(s) given, please put a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
 		}
 		duration := viper.GetDuration("duration")
 
