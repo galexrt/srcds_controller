@@ -113,11 +113,13 @@ var serverToolsNiceRestart = &cobra.Command{
 							errs.Errs = append(errs.Errs, err)
 							errs.Unlock()
 						}
-						time.Sleep(500 * time.Millisecond)
-						if err := server.Start(serverName); err != nil {
-							errs.Lock()
-							errs.Errs = append(errs.Errs, err)
-							errs.Unlock()
+						if !viper.GetBool("stop-only") {
+							time.Sleep(500 * time.Millisecond)
+							if err := server.Start(serverName); err != nil {
+								errs.Lock()
+								errs.Errs = append(errs.Errs, err)
+								errs.Unlock()
+							}
 						}
 					}(serverName)
 				}
@@ -157,11 +159,13 @@ var serverToolsNiceRestart = &cobra.Command{
 
 func init() {
 	serverToolsNiceRestart.PersistentFlags().DurationP("duration", "d", 11*time.Minute, "Time to countdown for server restart")
+	serverToolsNiceRestart.PersistentFlags().Bool("stop-only", false, "If servers should only be stopped and not restarted")
 	serverToolsNiceRestart.PersistentFlags().String("announce-minutes", "say Server Restart in %d minute(s)!", "Command template to be sent to servers during minutes over countdown")
 	serverToolsNiceRestart.PersistentFlags().String("announce-seconds", "say Server Restart in %d second(s)!", "Command template to be sent to servers during seconds over countdown")
 	serverToolsNiceRestart.PersistentFlags().StringSlice("default-announce-times", []string{"EVERY_MINUTE", "45", "30", "15", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"}, "Default times  at which the left time should be announced")
 	serverToolsNiceRestart.PersistentFlags().StringSlice("additional-announce-times", []string{}, "At which additional times the left time should be announced")
 	viper.BindPFlag("duration", serverToolsNiceRestart.PersistentFlags().Lookup("duration"))
+	viper.BindPFlag("stop-only", serverToolsNiceRestart.PersistentFlags().Lookup("stop-only"))
 	viper.BindPFlag("announce-minutes", serverToolsNiceRestart.PersistentFlags().Lookup("announce-minutes"))
 	viper.BindPFlag("announce-seconds", serverToolsNiceRestart.PersistentFlags().Lookup("announce-seconds"))
 	viper.BindPFlag("default-announce-times", serverToolsNiceRestart.PersistentFlags().Lookup("default-announce-times"))
