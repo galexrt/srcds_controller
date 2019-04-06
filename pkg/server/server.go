@@ -133,6 +133,18 @@ func Start(serverName string) error {
 			},
 			Mounts: []mount.Mount{
 				{
+					Type:     mount.TypeBind,
+					Source:   "/etc/localtime",
+					Target:   "/etc/localtime",
+					ReadOnly: true,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   "/etc/timezone",
+					Target:   "/etc/timezone",
+					ReadOnly: true,
+				},
+				{
 					Type:   mount.TypeBind,
 					Source: serverDir,
 					Target: serverDir,
