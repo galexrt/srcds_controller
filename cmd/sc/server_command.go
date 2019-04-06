@@ -57,7 +57,7 @@ var serverCommandCmd = &cobra.Command{
 			wg.Add(1)
 			go func(serverName string) {
 				defer wg.Done()
-				if err := server.SendCommand(serverName, args); err != nil {
+				if err := server.SendCommand(serverName, args[1:]); err != nil {
 					errs.Lock()
 					errs.Errs = append(errs.Errs, err)
 					errs.Unlock()
