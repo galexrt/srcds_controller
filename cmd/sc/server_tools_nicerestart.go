@@ -130,7 +130,7 @@ var serverToolsNiceRestart = &cobra.Command{
 			if byMinuteAnnouncement && secsRemaining%60 == 0 {
 				logger.Info("countdown: another minute is over")
 				logger.Debug("countdown: need to announce")
-				command := fmt.Sprintf(viper.GetString("announce-minutes"), int64(duration.Minutes()))
+				command := fmt.Sprintf(viper.GetString("announce-minutes"), int64(secsRemaining/60))
 				sendCommandInParallel(command)
 			} else if contains(announceTimes, strconv.Itoa(secsRemaining)) {
 				logger.Debug("countdown: need to announce")
@@ -143,7 +143,7 @@ var serverToolsNiceRestart = &cobra.Command{
 			}
 			timeLoggerCoolDown--
 
-			time.Sleep(999 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			secsRemaining--
 		}
 

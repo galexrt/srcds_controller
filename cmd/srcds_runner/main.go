@@ -122,11 +122,11 @@ func main() {
 	}
 	defer func() {
 		if tty == nil {
-			logger.Error("failed to close tty as it is nil")
+			//logger.Error("failed to close tty as it is nil")
 			return
 		}
 		if err = tty.Close(); err != nil {
-			logger.Error(err)
+			//logger.Error(err)
 			return
 		}
 	}()
@@ -142,7 +142,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err = cmd.Wait(); err != nil {
-			logger.Errorf("error: %s\n", err)
+			//logger.Errorf("error: %s\n", err)
 		}
 
 		chancloser.Close(stopCh)
@@ -160,13 +160,13 @@ func main() {
 		mutx.Lock()
 
 		if tty == nil {
-			logger.Error("cmd tty is (already) nil")
+			//logger.Error("cmd tty is (already) nil")
 		} else {
 			if onExitCommand != "" {
 				logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
 
 				if _, err := tty.Write([]byte("\n\n" + onExitCommand + "\n")); err != nil {
-					logger.Errorf("failed to write onExitCommand to server tty. %+v", err)
+					//logger.Errorf("failed to write onExitCommand to server tty. %+v", err)
 				}
 				time.Sleep(5 * time.Second)
 			}
@@ -176,7 +176,7 @@ func main() {
 
 		if cmd.Process != nil {
 			if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-				logger.Errorf("failed to send SIGTERM signal to server process. %+v", err)
+				//logger.Errorf("failed to send SIGTERM signal to server process. %+v", err)
 			}
 		}
 
@@ -277,11 +277,11 @@ func copyLogs(r io.Reader) error {
 			)
 		}
 		if err == io.EOF {
-			logger.Info("copyLogs: received EOF from given log source")
+			//logger.Info("copyLogs: received EOF from given log source")
 			return nil
 		}
 		if err != nil {
-			logger.Error(err)
+			//logger.Error(err)
 			return err
 		}
 	}
