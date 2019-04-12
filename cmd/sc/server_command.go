@@ -37,7 +37,7 @@ var serverCommandCmd = &cobra.Command{
 		"c",
 	},
 	Short:             "Send a command to one or more servers",
-	Args:              cobra.MinimumNArgs(2),
+	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var errs util.Errors
@@ -51,6 +51,9 @@ var serverCommandCmd = &cobra.Command{
 		}
 		if len(servers) == 0 {
 			return fmt.Errorf("no server(s) given, please put a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
+		}
+		if !viper.GetBool(AllServers) && len(args) <= 1 {
+			return fmt.Errorf("no command to send to the servers given")
 		}
 		wg := sync.WaitGroup{}
 		for _, serverName := range servers {
