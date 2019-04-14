@@ -76,7 +76,7 @@ var serverToolsUpdate = &cobra.Command{
 			wg.Add(1)
 			go func(serverName string) {
 				defer wg.Done()
-				command := exec.Command(path.Join(home, "steamcmd/steamcd.sh"), commandArgs...)
+				command := exec.Command(path.Join(home, "steamcmd/steamcmd.sh"), commandArgs...)
 				tty, err := pty.Start(command)
 				if err != nil {
 					logger.Fatal(err)
