@@ -27,10 +27,8 @@ import (
 
 	"github.com/acarl005/stripansi"
 	"github.com/galexrt/srcds_controller/pkg/config"
-	"github.com/galexrt/srcds_controller/pkg/util"
 	"github.com/kr/pty"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -42,7 +40,6 @@ var serverToolsUpdate = &cobra.Command{
 	Short:             "Update a gameserver",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var errs util.Errors
 		var servers []string
 		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
 			for _, srv := range config.Cfg.Servers {
@@ -61,6 +58,7 @@ var serverToolsUpdate = &cobra.Command{
 			return err
 		}
 
+		errorOccured := false
 		wg := sync.WaitGroup{}
 		for _, serverName := range servers {
 			_, serverCfg := config.Cfg.Servers.GetByName(serverName)
@@ -80,10 +78,8 @@ var serverToolsUpdate = &cobra.Command{
 				command := exec.Command(path.Join(home, "steamcmd/steamcmd.sh"), commandArgs...)
 				tty, err := pty.Start(command)
 				if err != nil {
-					log.Fatal(err)
-					errs.Lock()
-					errs.Errs = append(errs.Errs, err)
-					errs.Unlock()
+					log.Errorf("%+v", err)
+					errorOccured = true
 					return
 				}
 				defer func() {
@@ -105,20 +101,15 @@ var serverToolsUpdate = &cobra.Command{
 				}()
 
 				if err := command.Wait(); err != nil {
-					errs.Lock()
-					errs.Errs = append(errs.Errs, err)
-					errs.Unlock()
+					log.Errorf("%+v", err)
+					errorOccured = true
 				}
 			}(serverName)
 		}
 		wg.Wait()
 
-		if len(errs.Errs) > 0 {
-			err := errors.New("error occured during server update")
-			for _, erro := range errs.Errs {
-				err = errors.Wrap(err, erro.Error())
-			}
-			return err
+		if errorOccured {
+			return fmt.Errorf("error when sending commands")
 		}
 		return nil
 	},

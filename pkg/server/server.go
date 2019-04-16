@@ -28,7 +28,6 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/coreos/pkg/capnslog"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -37,11 +36,11 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 var (
-	logger    = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "server")
 	DockerCli *client.Client
 )
 
@@ -66,7 +65,7 @@ func List() error {
 }
 
 func Start(serverName string) error {
-	logger.Infof("starting server %s ...\n", serverName)
+	log.Infof("starting server %s ...\n", serverName)
 
 	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
@@ -168,7 +167,7 @@ func Start(serverName string) error {
 		}
 
 		for _, warning := range resp.Warnings {
-			logger.Warning(warning)
+			log.Warning(warning)
 		}
 		containerID = resp.ID
 	}
@@ -177,13 +176,13 @@ func Start(serverName string) error {
 		return err
 	}
 
-	logger.Infof("started server %s.", serverName)
+	log.Infof("started server %s.", serverName)
 
 	return nil
 }
 
 func Stop(serverName string) error {
-	logger.Infof("stopping server %s ...", serverName)
+	log.Infof("stopping server %s ...", serverName)
 
 	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
@@ -200,11 +199,11 @@ func Stop(serverName string) error {
 	containerID := cont.ID
 
 	if cont.State.Running {
-		logger.Infof("sending SIGTERM signal to server %s ...", serverName)
+		log.Infof("sending SIGTERM signal to server %s ...", serverName)
 		if err = DockerCli.ContainerKill(context.Background(), containerID, "SIGTERM"); err != nil {
-			logger.Error(err)
+			log.Error(err)
 		}
-		logger.Infof("sent SIGTERM signal to server %s. now waiting at maximum 5 before sending kill signal ...", serverName)
+		log.Infof("sent SIGTERM signal to server %s. now waiting at maximum 5 before sending kill signal ...", serverName)
 	}
 
 	duration := viper.GetDuration("timeout")
@@ -212,7 +211,7 @@ func Stop(serverName string) error {
 		return err
 	}
 
-	logger.Infof("stopped server %s.", serverName)
+	log.Infof("stopped server %s.", serverName)
 	return nil
 }
 
@@ -229,7 +228,7 @@ func Restart(serverName string) error {
 }
 
 func Remove(serverName string) error {
-	logger.Infof("removing server container %s ...", serverName)
+	log.Infof("removing server container %s ...", serverName)
 
 	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
@@ -244,12 +243,12 @@ func Remove(serverName string) error {
 		return err
 	}
 
-	logger.Infof("removed server container %s.", serverName)
+	log.Infof("removed server container %s.", serverName)
 	return nil
 }
 
 func Logs(serverName string, tail int) (io.ReadCloser, error) {
-	logger.Infof("showing logs of server %s ...\n", serverName)
+	log.Infof("showing logs of server %s ...\n", serverName)
 
 	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
 		return nil, fmt.Errorf("no server config found for %s", serverName)
@@ -271,7 +270,7 @@ func Logs(serverName string, tail int) (io.ReadCloser, error) {
 }
 
 func SendCommand(serverName string, args []string) error {
-	logger.Infof("sending command '%s' to server %s ...\n", strings.Join(args, " "), serverName)
+	log.Infof("sending command '%s' to server %s ...\n", strings.Join(args, " "), serverName)
 
 	_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 	if serverCfg == nil {
@@ -290,7 +289,7 @@ func SendCommand(serverName string, args []string) error {
 		return fmt.Errorf("error during command exec send to server %s. %+v", serverName, err)
 	}
 	if resp.StatusCode == http.StatusOK {
-		logger.Infof("successfully sent command to server %s.\n", serverName)
+		log.Infof("successfully sent command to server %s.\n", serverName)
 		return nil
 	}
 
@@ -301,7 +300,7 @@ func SendCommand(serverName string, args []string) error {
 }
 
 func UpdateRCONPassword(serverName string, password string) error {
-	logger.Infof("updating RCON password for server %s ...\n", serverName)
+	log.Infof("updating RCON password for server %s ...\n", serverName)
 
 	_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 	if serverCfg == nil {
@@ -316,7 +315,7 @@ func UpdateRCONPassword(serverName string, password string) error {
 		return fmt.Errorf("error during RCON password update send to server %s. %+v", serverName, err)
 	}
 	if resp.StatusCode == http.StatusOK {
-		logger.Infof("successfully updated RCON password for server %s.\n", serverName)
+		log.Infof("successfully updated RCON password for server %s.\n", serverName)
 		return nil
 	}
 

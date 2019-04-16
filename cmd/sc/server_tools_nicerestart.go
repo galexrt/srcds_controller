@@ -25,7 +25,6 @@ import (
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
-	"github.com/galexrt/srcds_controller/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -42,7 +41,6 @@ var serverToolsNiceRestart = &cobra.Command{
 	Short:             "Send a command to one or more servers",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var errs util.Errors
 		var servers []string
 		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
 			for _, srv := range config.Cfg.Servers {
@@ -56,6 +54,8 @@ var serverToolsNiceRestart = &cobra.Command{
 		}
 		duration := viper.GetDuration("duration")
 
+		errorOccured := false
+
 		sendCommandInParallel := func(command string) {
 			wg := sync.WaitGroup{}
 			for _, serverName := range servers {
@@ -63,9 +63,8 @@ var serverToolsNiceRestart = &cobra.Command{
 				go func(serverName string) {
 					defer wg.Done()
 					if err := server.SendCommand(serverName, []string{command}); err != nil {
-						errs.Lock()
-						errs.Errs = append(errs.Errs, err)
-						errs.Unlock()
+						log.Errorf("%+v", err)
+						errorOccured = true
 					}
 				}(serverName)
 			}
@@ -110,16 +109,14 @@ var serverToolsNiceRestart = &cobra.Command{
 					go func(serverName string) {
 						defer wg.Done()
 						if err := server.Stop(serverName); err != nil {
-							errs.Lock()
-							errs.Errs = append(errs.Errs, err)
-							errs.Unlock()
+							log.Errorf("%+v", err)
+							errorOccured = true
 						}
 						if !viper.GetBool("stop-only") {
 							time.Sleep(500 * time.Millisecond)
 							if err := server.Start(serverName); err != nil {
-								errs.Lock()
-								errs.Errs = append(errs.Errs, err)
-								errs.Unlock()
+								log.Errorf("%+v", err)
+								errorOccured = true
 							}
 						}
 					}(serverName)
@@ -148,11 +145,8 @@ var serverToolsNiceRestart = &cobra.Command{
 			secsRemaining--
 		}
 
-		if len(errs.Errs) > 0 {
-			for _, err := range errs.Errs {
-				log.Error(err)
-			}
-			return fmt.Errorf("error(s) occured, see above output for information")
+		if errorOccured {
+			return fmt.Errorf("error when sending commands")
 		}
 		return nil
 	},

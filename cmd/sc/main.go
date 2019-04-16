@@ -46,9 +46,10 @@ func main() {
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	log.SetFormatter(&log.TextFormatter{
-		DisableColors:   false,
-		FullTimestamp:   false,
-		TimestampFormat: "2006-01-02 15:04:05",
+		DisableTimestamp: true,
+		DisableColors:    false,
+		FullTimestamp:    false,
+		TimestampFormat:  "2006-01-02 15:04:05",
 	})
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)

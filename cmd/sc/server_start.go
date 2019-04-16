@@ -23,10 +23,9 @@ import (
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
-	"github.com/galexrt/srcds_controller/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"istio.io/istio/pkg/log"
 )
 
 // serverStartCmd represents the start command
@@ -35,7 +34,6 @@ var serverStartCmd = &cobra.Command{
 	Short:             "Start one or more servers",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var errs util.Errors
 		var servers []string
 		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
 			for _, srv := range config.Cfg.Servers {
@@ -47,25 +45,21 @@ var serverStartCmd = &cobra.Command{
 		if len(servers) == 0 {
 			return fmt.Errorf("no server(s) given, please put a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
 		}
+		errorOccured := false
 		wg := sync.WaitGroup{}
 		for _, serverName := range servers {
 			wg.Add(1)
 			go func(serverName string) {
 				defer wg.Done()
 				if err := server.Start(serverName); err != nil {
-					errs.Lock()
-					errs.Errs = append(errs.Errs, err)
-					errs.Unlock()
+					log.Errorf("%+v", err)
+					errorOccured = true
 				}
 			}(serverName)
 		}
 		wg.Wait()
-		if len(errs.Errs) > 0 {
-			err := errors.New("error occured during server start")
-			for _, erro := range errs.Errs {
-				err = errors.Wrap(err, erro.Error())
-			}
-			return err
+		if errorOccured {
+			return fmt.Errorf("error when sending commands")
 		}
 		return nil
 	},
