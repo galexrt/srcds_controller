@@ -26,6 +26,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/galexrt/srcds_controller/pkg/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -128,17 +129,17 @@ var serverToolsNiceRestart = &cobra.Command{
 			}
 
 			if byMinuteAnnouncement && secsRemaining%60 == 0 {
-				logger.Info("countdown: another minute is over")
-				logger.Debug("countdown: need to announce")
+				log.Info("countdown: another minute is over")
+				log.Debug("countdown: need to announce")
 				command := fmt.Sprintf(viper.GetString("announce-minutes"), int64(secsRemaining/60))
 				sendCommandInParallel(command)
 			} else if contains(announceTimes, strconv.Itoa(secsRemaining)) {
-				logger.Debug("countdown: need to announce")
+				log.Debug("countdown: need to announce")
 				command := fmt.Sprintf(viper.GetString("announce-seconds"), secsRemaining)
 				sendCommandInParallel(command)
 			}
 			if timeLoggerCoolDown == 15 || timeLoggerCoolDown == 0 {
-				logger.Infof("countdown: remaining: %d seconds, total: %d seconds", secsRemaining, secsTotal)
+				log.Infof("countdown: remaining: %d seconds, total: %d seconds", secsRemaining, secsTotal)
 				timeLoggerCoolDown = 15
 			}
 			timeLoggerCoolDown--
@@ -149,7 +150,7 @@ var serverToolsNiceRestart = &cobra.Command{
 
 		if len(errs.Errs) > 0 {
 			for _, err := range errs.Errs {
-				logger.Error(err)
+				log.Error(err)
 			}
 			return fmt.Errorf("error(s) occured, see above output for information")
 		}

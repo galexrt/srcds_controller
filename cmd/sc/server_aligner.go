@@ -23,6 +23,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/galexrt/srcds_controller/pkg/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -34,22 +35,22 @@ var serverAlignerCmd = &cobra.Command{
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, serverCfg := range config.Cfg.Servers {
-			logger.Infof("aligning server %s ...", serverCfg.Name)
+			log.Infof("aligning server %s ...", serverCfg.Name)
 
 			if !serverCfg.Enabled {
-				logger.Infof("skipping server alignment for %s as is disabled", serverCfg.Name)
+				log.Infof("skipping server alignment for %s as is disabled", serverCfg.Name)
 				continue
 			}
 
 			// Check if server container is running, if not start, unless config says server disabled.
 			cont, err := server.GetServerContainer(util.GetContainerName(serverCfg.Name))
 			if err != nil && !client.IsErrNotFound(err) {
-				logger.Errorf("failed to align server %s, during get server container. %+v", serverCfg.Name, err)
+				log.Errorf("failed to align server %s, during get server container. %+v", serverCfg.Name, err)
 				continue
 			}
 			if client.IsErrNotFound(err) || !cont.State.Running {
 				if err := server.Start(serverCfg.Name); err != nil {
-					logger.Errorf("failed to align server %s, during try to start not running server. %+v", serverCfg.Name, err)
+					log.Errorf("failed to align server %s, during try to start not running server. %+v", serverCfg.Name, err)
 					continue
 				}
 				// TODO Send command to trigger "I AM READY!" message then
@@ -58,11 +59,11 @@ var serverAlignerCmd = &cobra.Command{
 				// Right now we just sleep 32 seconds and continue.
 				found, err := server.WaitForConsoleContains(serverCfg.Name, "I AM READY!")
 				if err != nil {
-					logger.Errorf("failed to align server %s, during wait for console to contain ready signal. %+v", serverCfg.Name, err)
+					log.Errorf("failed to align server %s, during wait for console to contain ready signal. %+v", serverCfg.Name, err)
 					continue
 				}
 				if !found {
-					logger.Errorf("failed to align server %s, during wait for console to contain ready signal. did not find start up done signal text", serverCfg.Name)
+					log.Errorf("failed to align server %s, during wait for console to contain ready signal. did not find start up done signal text", serverCfg.Name)
 					continue
 				}
 				time.Sleep(32 * time.Second)
@@ -70,10 +71,10 @@ var serverAlignerCmd = &cobra.Command{
 
 			//server.SendCommand(serverCfg.Name, "sv_logecho 1")
 			if err := server.UpdateRCONPassword(serverCfg.Name, serverCfg.RCON.Password); err != nil {
-				logger.Errorf("failed to align server %s. %+v", serverCfg.Name, err)
+				log.Errorf("failed to align server %s. %+v", serverCfg.Name, err)
 				continue
 			}
-			logger.Infof("aligned server %s.", serverCfg.Name)
+			log.Infof("aligned server %s.", serverCfg.Name)
 		}
 
 		return nil

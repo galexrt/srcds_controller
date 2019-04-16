@@ -31,6 +31,7 @@ import (
 	"github.com/kr/pty"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -79,7 +80,7 @@ var serverToolsUpdate = &cobra.Command{
 				command := exec.Command(path.Join(home, "steamcmd/steamcmd.sh"), commandArgs...)
 				tty, err := pty.Start(command)
 				if err != nil {
-					logger.Fatal(err)
+					log.Fatal(err)
 					errs.Lock()
 					errs.Errs = append(errs.Errs, err)
 					errs.Unlock()
@@ -87,11 +88,11 @@ var serverToolsUpdate = &cobra.Command{
 				}
 				defer func() {
 					if tty == nil {
-						logger.Debug("failed to close tty as it is nil")
+						log.Debug("failed to close tty as it is nil")
 						return
 					}
 					if err = tty.Close(); err != nil {
-						logger.Debug(err)
+						log.Debug(err)
 						return
 					}
 				}()
@@ -99,7 +100,7 @@ var serverToolsUpdate = &cobra.Command{
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					logger.Debug("beginning to stream logs")
+					log.Debug("beginning to stream logs")
 					copyLogs(tty)
 				}()
 
@@ -140,11 +141,11 @@ func copyLogs(r io.Reader) error {
 			)
 		}
 		if err == io.EOF {
-			logger.Debug("copyLogs: received EOF from given log source")
+			log.Debug("copyLogs: received EOF from given log source")
 			return nil
 		}
 		if err != nil {
-			logger.Debug(err)
+			log.Debug(err)
 			return err
 		}
 	}
