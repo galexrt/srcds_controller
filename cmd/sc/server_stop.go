@@ -26,7 +26,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"istio.io/istio/pkg/log"
+	log "github.com/sirupsen/logrus"
 )
 
 // serverStopCmd represents the stop command

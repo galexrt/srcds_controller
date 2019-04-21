@@ -24,9 +24,9 @@ import (
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"istio.io/istio/pkg/log"
 )
 
 // serverRestartCmd represents the restart command

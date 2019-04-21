@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -247,7 +248,7 @@ func Remove(serverName string) error {
 	return nil
 }
 
-func Logs(serverName string, tail int) (io.ReadCloser, error) {
+func Logs(serverName string, since time.Duration, tail int) (io.ReadCloser, error) {
 	log.Infof("showing logs of server %s ...\n", serverName)
 
 	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
@@ -259,13 +260,20 @@ func Logs(serverName string, tail int) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	body, err := DockerCli.ContainerLogs(context.Background(), cont.ID, types.ContainerLogsOptions{
+	logsOptions := types.ContainerLogsOptions{
 		Follow:     viper.GetBool("follow"),
 		ShowStderr: true,
 		ShowStdout: true,
 		Timestamps: false,
-		Tail:       strconv.Itoa(tail),
-	})
+	}
+
+	if since != 0*time.Millisecond {
+		logsOptions.Since = since.String()
+	} else if tail != 0 {
+		logsOptions.Tail = strconv.Itoa(tail)
+	}
+
+	body, err := DockerCli.ContainerLogs(context.Background(), cont.ID, logsOptions)
 	return body, err
 }
 
