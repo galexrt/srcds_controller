@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -248,33 +249,40 @@ func Remove(serverName string) error {
 	return nil
 }
 
-func Logs(serverName string, since time.Duration, tail int) (io.ReadCloser, error) {
+func Logs(serverName string, since time.Duration, tail int) (io.ReadCloser, io.ReadCloser, error) {
 	log.Infof("showing logs of server %s ...\n", serverName)
 
 	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return nil, fmt.Errorf("no server config found for %s", serverName)
+		return nil, nil, fmt.Errorf("no server config found for %s", serverName)
 	}
 
 	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	logsOptions := types.ContainerLogsOptions{
-		Follow:     viper.GetBool("follow"),
-		ShowStderr: true,
-		ShowStdout: true,
-		Timestamps: false,
+	args := []string{"logs"}
+	if viper.GetBool("follow") {
+		args = append(args, "-f")
 	}
 
 	if since != 0*time.Millisecond {
-		logsOptions.Since = since.String()
+		args = append(args, fmt.Sprintf("--since=%s", since.String()))
 	} else if tail != 0 {
-		logsOptions.Tail = strconv.Itoa(tail)
+		args = append(args, fmt.Sprintf("--tail=%d", tail))
 	}
 
-	body, err := DockerCli.ContainerLogs(context.Background(), cont.ID, logsOptions)
-	return body, err
+	args = append(args, cont.ID)
+
+	cmd := exec.Command("docker", args...)
+
+	stdoutIn, _ := cmd.StdoutPipe()
+	stderrIn, _ := cmd.StderrPipe()
+	if err := cmd.Start(); err != nil {
+		return nil, nil, err
+	}
+
+	return stdoutIn, stderrIn, nil
 }
 
 func SendCommand(serverName string, args []string) error {

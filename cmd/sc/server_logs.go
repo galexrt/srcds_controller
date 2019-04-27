@@ -34,20 +34,33 @@ var serverLogsCmd = &cobra.Command{
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		serverName := args[0]
-		body, err := server.Logs(serverName, viper.GetDuration("since"), viper.GetInt("tail"))
+		stdin, stderr, err := server.Logs(serverName, viper.GetDuration("since"), viper.GetInt("tail"))
 		if err != nil {
 			return err
 		}
-		if body == nil {
-			return fmt.Errorf("server.Logs returned nil body. something is wrong")
+		if stdin == nil || stderr == nil {
+			return fmt.Errorf("server.Logs returned no response. something is wrong")
 		}
 
-		scanner := bufio.NewScanner(body)
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
+		outChan := make(chan string)
 
-		return scanner.Err()
+		go func() {
+			scanner := bufio.NewScanner(stdin)
+			for scanner.Scan() {
+				outChan <- scanner.Text()
+			}
+		}()
+		go func() {
+			scanner := bufio.NewScanner(stderr)
+			for scanner.Scan() {
+				outChan <- scanner.Text()
+			}
+		}()
+
+		for {
+			out := <-outChan
+			fmt.Println(out)
+		}
 	},
 }
 

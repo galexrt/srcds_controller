@@ -83,30 +83,53 @@ var serverConsoleCmd = &cobra.Command{
 		ui.SetKeybinding("Esc", func() { ui.Quit() })
 		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
 
+		stdin, stderr, err := server.Logs(serverName, 0*time.Millisecond, 100)
+		if err != nil {
+			ui.Quit()
+			return err
+		}
+		if stdin == nil || stderr == nil {
+			ui.Quit()
+			return fmt.Errorf("server.Logs returned nil body. something is wrong. %+v", err)
+		}
+
+		outChan := make(chan string)
+
+		errors := make(chan error)
+
 		go func() {
-			body, err := server.Logs(serverName, 0*time.Millisecond, 100)
-			if err != nil {
-				ui.Quit()
-				return
-			}
-			if body == nil {
-				consoleError = fmt.Errorf("server.Logs returned nil body. something is wrong")
-				ui.Quit()
-				return
-			}
-
-			scanner := bufio.NewScanner(body)
+			scanner := bufio.NewScanner(stdin)
 			for scanner.Scan() {
-				history.Append(tui.NewLabel(scanner.Text()))
-				ui.Repaint()
+				outChan <- scanner.Text()
 			}
-
-			if err = scanner.Err(); err != nil {
-				consoleError = err
-				ui.Quit()
+			if scanner.Err() != nil {
+				errors <- err
 				return
 			}
-			return
+		}()
+		go func() {
+			scanner := bufio.NewScanner(stderr)
+			for scanner.Scan() {
+				outChan <- scanner.Text()
+			}
+			if scanner.Err() != nil {
+				errors <- err
+				return
+			}
+		}()
+
+		go func() {
+			for {
+				select {
+				case out := <-outChan:
+					history.Append(tui.NewLabel(out))
+					ui.Repaint()
+				case erro := <-errors:
+					consoleError = erro
+					ui.Quit()
+					return
+				}
+			}
 		}()
 
 		if err := ui.Run(); err != nil {
