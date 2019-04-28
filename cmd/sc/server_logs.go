@@ -19,8 +19,10 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -30,36 +32,69 @@ import (
 var serverLogsCmd = &cobra.Command{
 	Use:               "logs",
 	Short:             "Show logs of one or more servers",
-	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		serverName := args[0]
-		stdin, stderr, err := server.Logs(serverName, viper.GetDuration("since"), viper.GetInt("tail"))
-		if err != nil {
-			return err
+		var servers []string
+		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
+			for _, srv := range config.Cfg.Servers {
+				servers = append(servers, srv.Name)
+			}
+		} else {
+			servers = strings.Split(args[0], ",")
 		}
-		if stdin == nil || stderr == nil {
-			return fmt.Errorf("server.Logs returned no response. something is wrong")
+		if len(servers) == 0 {
+			return fmt.Errorf("no server(s) given, please provide a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
 		}
 
+		errors := make(chan error)
 		outChan := make(chan string)
 
-		go func() {
-			scanner := bufio.NewScanner(stdin)
-			for scanner.Scan() {
-				outChan <- scanner.Text()
+		for _, serverName := range servers {
+			stdin, stderr, err := server.Logs(serverName, viper.GetDuration("since"), viper.GetInt("tail"))
+			if err != nil {
+				return err
 			}
-		}()
-		go func() {
-			scanner := bufio.NewScanner(stderr)
-			for scanner.Scan() {
-				outChan <- scanner.Text()
+			if stdin == nil || stderr == nil {
+				return fmt.Errorf("server.Logs returned no response. something is wrong")
 			}
-		}()
+
+			go func(serverName string) {
+				scanner := bufio.NewScanner(stdin)
+				for scanner.Scan() {
+					msg := scanner.Text()
+					if len(servers) > 1 {
+						msg = fmt.Sprintf("%s - %s", serverName, msg)
+					}
+					outChan <- msg
+				}
+				if scanner.Err() != nil {
+					errors <- scanner.Err()
+					return
+				}
+			}(serverName)
+			go func(serverName string) {
+				scanner := bufio.NewScanner(stderr)
+				for scanner.Scan() {
+					msg := scanner.Text()
+					if len(servers) > 1 {
+						msg = fmt.Sprintf("%s - %s", serverName, msg)
+					}
+					outChan <- msg
+				}
+				if scanner.Err() != nil {
+					errors <- scanner.Err()
+					return
+				}
+			}(serverName)
+		}
 
 		for {
-			out := <-outChan
-			fmt.Println(out)
+			select {
+			case out := <-outChan:
+				fmt.Println(out)
+			case erro := <-errors:
+				return erro
+			}
 		}
 	},
 }

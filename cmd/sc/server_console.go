@@ -20,12 +20,15 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
 
+	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/marcusolsson/tui-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverConsoleCmd represents the logs command
@@ -34,12 +37,21 @@ var serverConsoleCmd = &cobra.Command{
 	Aliases:           []string{"t"},
 	Short:             "Show server logs and allow commands to be directly posted to one server",
 	PersistentPreRunE: initDockerCli,
-	Args:              cobra.RangeArgs(1, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.SetOutput(ioutil.Discard)
 		var consoleError error
 
-		serverName := args[0]
+		var servers []string
+		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
+			for _, srv := range config.Cfg.Servers {
+				servers = append(servers, srv.Name)
+			}
+		} else {
+			servers = strings.Split(args[0], ",")
+		}
+		if len(servers) == 0 {
+			return fmt.Errorf("no server(s) given, please provide a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
+		}
 
 		history := tui.NewVBox()
 
@@ -57,12 +69,14 @@ var serverConsoleCmd = &cobra.Command{
 			if e.Text() == "" {
 				return
 			}
-			if err := server.SendCommand(serverName, []string{e.Text()}); err != nil {
-				history.Append(tui.NewHBox(
-					tui.NewLabel("ERROR"),
-					tui.NewLabel(err.Error()),
-					tui.NewSpacer(),
-				))
+			for _, serverName := range servers {
+				if err := server.SendCommand(serverName, []string{e.Text()}); err != nil {
+					history.Append(tui.NewHBox(
+						tui.NewLabel("ERROR"),
+						tui.NewLabel(err.Error()),
+						tui.NewSpacer(),
+					))
+				}
 			}
 			input.SetText("")
 		})
@@ -83,40 +97,41 @@ var serverConsoleCmd = &cobra.Command{
 		ui.SetKeybinding("Esc", func() { ui.Quit() })
 		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
 
-		stdin, stderr, err := server.Logs(serverName, 0*time.Millisecond, 100)
-		if err != nil {
-			ui.Quit()
-			return err
-		}
-		if stdin == nil || stderr == nil {
-			ui.Quit()
-			return fmt.Errorf("server.Logs returned nil body. something is wrong. %+v", err)
-		}
-
 		outChan := make(chan string)
-
 		errors := make(chan error)
 
-		go func() {
-			scanner := bufio.NewScanner(stdin)
-			for scanner.Scan() {
-				outChan <- scanner.Text()
+		for _, serverName := range servers {
+			stdin, stderr, err := server.Logs(serverName, 0*time.Millisecond, 100)
+			if err != nil {
+				ui.Quit()
+				return err
 			}
-			if scanner.Err() != nil {
-				errors <- err
-				return
+			if stdin == nil || stderr == nil {
+				ui.Quit()
+				return fmt.Errorf("server.Logs returned nil body. something is wrong. %+v", err)
 			}
-		}()
-		go func() {
-			scanner := bufio.NewScanner(stderr)
-			for scanner.Scan() {
-				outChan <- scanner.Text()
-			}
-			if scanner.Err() != nil {
-				errors <- err
-				return
-			}
-		}()
+
+			go func(serverName string) {
+				scanner := bufio.NewScanner(stdin)
+				for scanner.Scan() {
+					outChan <- scanner.Text()
+				}
+				if scanner.Err() != nil {
+					errors <- scanner.Err()
+					return
+				}
+			}(serverName)
+			go func(serverName string) {
+				scanner := bufio.NewScanner(stderr)
+				for scanner.Scan() {
+					outChan <- scanner.Text()
+				}
+				if scanner.Err() != nil {
+					errors <- scanner.Err()
+					return
+				}
+			}(serverName)
+		}
 
 		go func() {
 			for {
