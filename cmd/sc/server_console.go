@@ -101,7 +101,7 @@ var serverConsoleCmd = &cobra.Command{
 		errors := make(chan error)
 
 		for _, serverName := range servers {
-			stdin, stderr, err := server.Logs(serverName, 0*time.Millisecond, 100)
+			stdin, stderr, err := server.Logs(serverName, 0*time.Millisecond, 10)
 			if err != nil {
 				ui.Quit()
 				return err
