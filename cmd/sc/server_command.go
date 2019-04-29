@@ -41,12 +41,12 @@ var serverCommandCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var servers []string
 		var cmdArgs []string
-		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
+		if viper.GetBool(AllServers) || (len(args) > 0 && strings.ToLower(args[0]) == AllServers) {
 			for _, srv := range config.Cfg.Servers {
 				servers = append(servers, srv.Name)
 			}
 			cmdArgs = args[0:]
-		} else {
+		} else if len(args) > 0 {
 			servers = strings.Split(args[0], ",")
 			cmdArgs = args[1:]
 		}

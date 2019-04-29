@@ -42,11 +42,11 @@ var serverConsoleCmd = &cobra.Command{
 		var consoleError error
 
 		var servers []string
-		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
+		if viper.GetBool(AllServers) || (len(args) > 0 && strings.ToLower(args[0]) == AllServers) {
 			for _, srv := range config.Cfg.Servers {
 				servers = append(servers, srv.Name)
 			}
-		} else {
+		} else if len(args) > 0 {
 			servers = strings.Split(args[0], ",")
 		}
 		if len(servers) == 0 {
@@ -114,7 +114,11 @@ var serverConsoleCmd = &cobra.Command{
 			go func(serverName string) {
 				scanner := bufio.NewScanner(stdin)
 				for scanner.Scan() {
-					outChan <- scanner.Text()
+					msg := scanner.Text()
+					if len(servers) > 1 {
+						msg = fmt.Sprintf("%s: %s", serverName, msg)
+					}
+					outChan <- msg
 				}
 				if scanner.Err() != nil {
 					errors <- scanner.Err()
@@ -124,7 +128,11 @@ var serverConsoleCmd = &cobra.Command{
 			go func(serverName string) {
 				scanner := bufio.NewScanner(stderr)
 				for scanner.Scan() {
-					outChan <- scanner.Text()
+					msg := scanner.Text()
+					if len(servers) > 1 {
+						msg = fmt.Sprintf("%s: %s", serverName, msg)
+					}
+					outChan <- msg
 				}
 				if scanner.Err() != nil {
 					errors <- scanner.Err()

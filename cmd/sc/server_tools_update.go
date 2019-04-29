@@ -41,11 +41,11 @@ var serverToolsUpdate = &cobra.Command{
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var servers []string
-		if viper.GetBool(AllServers) || strings.ToLower(args[0]) == AllServers {
+		if viper.GetBool(AllServers) || (len(args) > 0 && strings.ToLower(args[0]) == AllServers) {
 			for _, srv := range config.Cfg.Servers {
 				servers = append(servers, srv.Name)
 			}
-		} else {
+		} else if len(args) > 0 {
 			servers = strings.Split(args[0], ",")
 		}
 		if len(servers) == 0 {
