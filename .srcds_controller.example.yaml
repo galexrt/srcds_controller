@@ -18,7 +18,9 @@ servers:
     enabled: true
     rcon:
       password: YOUR_RCON_PASSWORD
-    gameID: 4000
+    gameID: 4020
+    resources: {}
+      #cpusetcpus: "0,1"
     checks:
       - name: rcon
         opts:

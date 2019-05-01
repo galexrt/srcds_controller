@@ -160,6 +160,9 @@ func Start(serverName string) error {
 				Target: mountDir,
 			})
 		}
+		if serverCfg.Resources != nil {
+			contHostCfg.Resources = *serverCfg.Resources
+		}
 
 		netCfg := &network.NetworkingConfig{}
 		var resp container.ContainerCreateCreatedBody

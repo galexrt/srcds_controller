@@ -18,6 +18,8 @@ package config
 
 import (
 	"strings"
+
+	"github.com/docker/docker/api/types/container"
 )
 
 // Servers list of Server
@@ -25,19 +27,20 @@ type Servers []Server
 
 // Server config/info for a server
 type Server struct {
-	Name          string     `yaml:"name"`
-	Address       string     `yaml:"address"`
-	Port          int        `yaml:"port"`
-	RunnerPort    int        `yaml:"runnerPort"`
-	Path          string     `yaml:"path"`
-	MountsDir     string     `yaml:"mountsDir"`
-	Flags         []string   `yaml:"flags"`
-	RunOptions    RunOptions `yaml:"runOptions"`
-	RCON          RCON       `yaml:"rcon"`
-	Checks        []Check    `yaml:"checks"`
-	OnExitCommand string     `yaml:"onExitCommand"`
-	Enabled       bool       `yaml:"enabled"`
-	GameID        int64      `yaml:"gameID"`
+	Name          string               `yaml:"name"`
+	Address       string               `yaml:"address"`
+	Port          int                  `yaml:"port"`
+	RunnerPort    int                  `yaml:"runnerPort"`
+	Path          string               `yaml:"path"`
+	MountsDir     string               `yaml:"mountsDir"`
+	Flags         []string             `yaml:"flags"`
+	RunOptions    RunOptions           `yaml:"runOptions"`
+	RCON          RCON                 `yaml:"rcon"`
+	Checks        []Check              `yaml:"checks"`
+	OnExitCommand string               `yaml:"onExitCommand"`
+	Enabled       bool                 `yaml:"enabled"`
+	GameID        int64                `yaml:"gameID"`
+	Resources     *container.Resources `yaml:"resources"`
 }
 
 // RunOptions run options such as user and group id to run the server as.
