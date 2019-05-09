@@ -35,7 +35,7 @@ import (
 var serverConsoleCmd = &cobra.Command{
 	Use:               "console",
 	Aliases:           []string{"t", "con"},
-	Short:             "Show server logs and allow commands to be directly posted to one server",
+	Short:             "Show server logs and allow commands to be directly posted to one or more servers",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.SetOutput(ioutil.Discard)

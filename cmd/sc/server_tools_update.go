@@ -37,7 +37,7 @@ import (
 // serverToolsUpdate represents the stop command
 var serverToolsUpdate = &cobra.Command{
 	Use:               "update",
-	Short:             "Update a gameserver",
+	Short:             "Update one ore more servers",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var servers []string
