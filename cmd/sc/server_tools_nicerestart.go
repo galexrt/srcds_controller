@@ -38,7 +38,7 @@ const (
 // serverToolsNiceRestart represents the stop command
 var serverToolsNiceRestart = &cobra.Command{
 	Use:               "nicerestart",
-	Short:             "Send a command to one or more servers",
+	Short:             "Triggers a nice restart with a countdown before doing so.",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var servers []string
