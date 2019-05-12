@@ -24,6 +24,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // ResultCounter
@@ -79,8 +80,12 @@ func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, s
 			for _, action := range check.Limit.Actions {
 				switch strings.ToLower(action) {
 				case "restart":
-					if err := server.Restart(serverCfg.Name); err != nil {
-						log.Error(err)
+					if !viper.GetBool("dry-run") {
+						log.Debug("dry-run mode active, server restart")
+					} else {
+						if err := server.Restart(serverCfg.Name); err != nil {
+							log.Error(err)
+						}
 					}
 				}
 			}

@@ -25,6 +25,7 @@ import (
 	"github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	// Import RCON check
 
@@ -59,6 +60,8 @@ var checkerCmd = &cobra.Command{
 }
 
 func init() {
+	checkerCmd.PersistentFlags().Bool("dry-run", false, "dry run mode")
+	viper.BindPFlag("dry-run", checkerCmd.PersistentFlags().Lookup("dry-run"))
 	rootCmd.AddCommand(checkerCmd)
 }
 

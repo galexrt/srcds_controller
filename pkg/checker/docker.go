@@ -26,6 +26,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func CheckForDockerEvents(stopCh <-chan struct{}) {
@@ -71,8 +72,12 @@ func handleDockerEvent(event events.Message) error {
 		}
 		serverName := event.Actor.Attributes["name"]
 
-		if err := server.Restart(serverName); err != nil {
-			return err
+		if !viper.GetBool("dry-run") {
+			log.Debug("dry-run mode active, server restart")
+		} else {
+			if err := server.Restart(serverName); err != nil {
+				return err
+			}
 		}
 	default:
 		log.Debugf("docker event that isn't of our concern (not 'die')")
