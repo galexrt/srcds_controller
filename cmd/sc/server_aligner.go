@@ -70,10 +70,6 @@ var serverAlignerCmd = &cobra.Command{
 			}
 
 			//server.SendCommand(serverCfg.Name, "sv_logecho 1")
-			if err := server.UpdateRCONPassword(serverCfg.Name, serverCfg.RCON.Password); err != nil {
-				log.Errorf("failed to align server %s. %+v", serverCfg.Name, err)
-				continue
-			}
 			log.Infof("aligned server %s.", serverCfg.Name)
 		}
 

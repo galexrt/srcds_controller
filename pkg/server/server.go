@@ -350,46 +350,6 @@ func SendCommand(serverName string, args []string) error {
 	return fmt.Errorf("error during sending of command to srcds_runner for server %s", serverName)
 }
 
-func UpdateRCONPassword(serverName string, password string) error {
-	log.Infof("updating RCON password for server %s ...\n", serverName)
-
-	_, serverCfg := config.Cfg.Servers.GetByName(serverName)
-	if serverCfg == nil {
-		return fmt.Errorf("no server config found for %s", serverName)
-	}
-
-	cont, err := GetServerContainer(serverName)
-	if err != nil {
-		return err
-	}
-
-	var authKey string
-	for _, env := range cont.Config.Env {
-		if strings.HasPrefix(env, fmt.Sprintf("%s=", SRCDSRunnerAuthKeyEnvKey)) {
-			authKey = strings.Split(env, "=")[1]
-			break
-		}
-	}
-
-	if authKey == "" {
-		return fmt.Errorf("server container %s does not have an auth key set", serverName)
-	}
-
-	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/rconPwUpdate", serverCfg.RunnerPort), url.Values{
-		"auth-key": {authKey},
-		"password": {password},
-	})
-	if err != nil {
-		return fmt.Errorf("error during RCON password update send to server %s. %+v", serverName, err)
-	}
-	if resp.StatusCode == http.StatusOK {
-		log.Infof("successfully updated RCON password for server %s.\n", serverName)
-		return nil
-	}
-
-	return fmt.Errorf("error during send command to srcds_runner for %s", serverName)
-}
-
 func GetServerContainer(serverName string) (types.ContainerJSON, error) {
 	var err error
 	var cont types.ContainerJSON

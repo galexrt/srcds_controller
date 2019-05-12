@@ -16,7 +16,7 @@ VERSION      ?= $(shell cat VERSION)
 
 pkgs = $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
 
-DOCKER_IMAGE_NAME ?= srcds_controller
+DOCKER_IMAGE_NAME ?= galexrt/srcds_controller
 DOCKER_IMAGE_TAG  ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 
 all: format style vet test build
