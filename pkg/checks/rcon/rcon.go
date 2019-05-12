@@ -20,14 +20,12 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/coreos/pkg/capnslog"
 	rcon "github.com/galexrt/go-rcon"
 	"github.com/galexrt/srcds_controller/pkg/checks"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/imdario/mergo"
+	log "github.com/sirupsen/logrus"
 )
-
-var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "pkg/checks/rcon")
 
 func init() {
 	checks.Checks["rcon"] = Run
@@ -37,28 +35,28 @@ func init() {
 func Run(check config.Check, server config.Server) bool {
 	rconCfg := config.Cfg.Checks["rcon"]
 	if err := mergo.Map(&rconCfg, check.Opts); err != nil {
-		logger.Fatalf("failed to merge checks config and checks opts from server %s", server.Name)
+		log.Fatalf("failed to merge checks config and checks opts from server %s", server.Name)
 	}
 
-	logger.Debugf("connecting to server %s using RCON", server.Name)
+	log.Debugf("connecting to server %s using RCON", server.Name)
 	port := strconv.Itoa(server.Port)
 	con, err := rcon.Connect(net.JoinHostPort(server.Address, port), &rcon.ConnectOptions{
-		RCONPassword: rconCfg["password"],
+		RCONPassword: server.RCON.Password,
 		Timeout:      rconCfg["timeout"],
 	})
 	if err != nil {
-		logger.Errorf("error connecting to server %s using RCON. %+v", server.Name, err)
+		log.Errorf("error connecting to server %s using RCON. %+v", server.Name, err)
 		return false
 	}
 	defer con.Close()
 
 	out, err := con.Send("sv_lan")
 	if err != nil {
-		logger.Errorf("error executing rcon `hostname` command. %+v", err)
-		logger.Debugf("rcond `hostname` command output: %s", out)
+		log.Errorf("error executing rcon `sv_lan` command. %+v", err)
+		log.Debugf("rcond `sv_lan` command output: %s", out)
 		return false
 	}
-	logger.Debugf("rcond `hostname` command output: %s", out)
+	log.Debugf("rcond `sv_lan` command output: %s", out)
 
 	return true
 }

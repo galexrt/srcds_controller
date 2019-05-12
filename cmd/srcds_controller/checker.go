@@ -22,29 +22,36 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/galexrt/srcds_controller/pkg/checker"
+	"github.com/docker/docker/client"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	// Import RCON check
+
+	"github.com/galexrt/srcds_controller/pkg/checker"
 	_ "github.com/galexrt/srcds_controller/pkg/checks/rcon"
+	"github.com/galexrt/srcds_controller/pkg/server"
 )
 
 // checkerCmd represents the checker command
 var checkerCmd = &cobra.Command{
-	Use:    "checker",
-	Short:  "Run the srcd server checker",
-	Hidden: true,
+	Use:               "checker",
+	Short:             "Run the srcds server checker",
+	Hidden:            true,
+	PersistentPreRunE: initDockerCli,
 	Run: func(cmd *cobra.Command, args []string) {
 		stopCh := make(chan struct{})
 		sigCh := make(chan os.Signal)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		logger.Infof("running checker")
+		log.Infof("running checker")
+
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			checker.New().Run(stopCh)
 		}()
+
 		<-sigCh
 		close(stopCh)
 		wg.Wait()
@@ -53,4 +60,13 @@ var checkerCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(checkerCmd)
+}
+
+func initDockerCli(cmd *cobra.Command, args []string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return err
+	}
+	server.DockerCli = cli
+	return err
 }

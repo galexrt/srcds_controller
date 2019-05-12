@@ -23,10 +23,8 @@ servers:
       #cpusetcpus: "0,1"
     checks:
       - name: rcon
-        opts:
-          password: YOUR_RCON_PASSWORD
         limit:
-          after: 10m
+          after: 7m
           count: 1
           actions:
             - RESTART

@@ -35,7 +35,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "sc",
-	Short: "Check if srcds servers are up and react on that, and manage one or more servers using a systemctl like cli",
+	Short: "Client tool to manage gameservers run using srcds_controller project.",
 }
 
 func main() {
@@ -74,6 +74,7 @@ func initConfig() {
 	}
 
 	config.Cfg = &config.Config{}
+	config.FilePath = cfgFile
 
 	if _, err := os.Stat(cfgFile); err == nil {
 		out, err := ioutil.ReadFile(cfgFile)

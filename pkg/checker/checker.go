@@ -21,13 +21,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coreos/pkg/capnslog"
 	"github.com/galexrt/srcds_controller/pkg/checks"
 	"github.com/galexrt/srcds_controller/pkg/config"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
-	logger        = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "pkg/checker")
 	resultCounter = ResultServerList{}
 )
 
@@ -43,17 +42,23 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 
 	resultCh := make(chan Result)
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		CheckForDockerEvents(stopCh)
+	}()
+
 	for _, server := range config.Cfg.Servers {
 		wg.Add(1)
 		go func(server config.Server, stopCh <-chan struct{}) {
 			defer wg.Done()
 			for _, check := range server.Checks {
-				logger.Infof("starting check %s for server %s", server.Name, check.Name)
+				log.Infof("starting check %s for server %s", server.Name, check.Name)
 				wg.Add(1)
 				go func(check config.Check, server config.Server) {
 					defer wg.Done()
 					for {
-						logger.Debugf("running check %s", check.Name)
+						log.Debugf("running check %s", check.Name)
 						resultCh <- Result{
 							Check:  check,
 							Server: server,
@@ -62,7 +67,7 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 
 						splayTime := calculateTimeSplay(config.Cfg.Checker.Splay.Start, config.Cfg.Checker.Splay.End)
 						waitTime := config.Cfg.Checker.Interval + splayTime
-						logger.Debugf("waitTime: %s, splayTime: %s", waitTime, splayTime)
+						log.Debugf("waitTime: %s, splayTime: %s", waitTime, splayTime)
 
 						select {
 						case <-time.After(waitTime):
@@ -75,7 +80,9 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 		}(server, stopCh)
 	}
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case result := <-resultCh:
@@ -86,14 +93,14 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 		}
 	}()
 
-	logger.Infof("waiting for signal")
+	log.Infof("waiting for signal")
 
 	select {
 	case <-stopCh:
 	}
-	logger.Info("signal received, waiting on waitgroup ...")
+	log.Info("signal received, waiting on waitgroup ...")
 	wg.Wait()
-	logger.Info("waitgroup successfully synced")
+	log.Info("waitgroup successfully synced")
 	return nil
 }
 

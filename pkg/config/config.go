@@ -27,6 +27,9 @@ var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "p
 // Cfg variable holding the global config object
 var Cfg *Config
 
+// FilePath path to config file
+var FilePath string
+
 // Config config file struct
 type Config struct {
 	Docker  Docker               `yaml:"docker"`

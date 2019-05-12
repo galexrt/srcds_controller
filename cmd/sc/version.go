@@ -14,25 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package actionexec
+package main
 
 import (
-	"os/exec"
+	"fmt"
+	"os"
 
-	"github.com/coreos/pkg/capnslog"
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/prometheus/common/version"
+	"github.com/spf13/cobra"
 )
 
-var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "pkg/actionexec")
+// checkerCmd represents the version command
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Show version info",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Print(version.Print(os.Args[0]))
+	},
+}
 
-// RunAction run a command in shell
-func RunAction(cwd string, action string, server config.Server) {
-	logger.Infof("running '%s'", action)
-	command := exec.Command("bash", "-c", action)
-	command.Dir = cwd
-	out, err := command.CombinedOutput()
-	if err != nil {
-		logger.Errorf("error running '%s'", action)
-	}
-	logger.Debugf("output: %s", out)
+func init() {
+	rootCmd.AddCommand(versionCmd)
 }

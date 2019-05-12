@@ -32,9 +32,12 @@ import (
 
 	"github.com/acarl005/stripansi"
 	"github.com/galexrt/srcds_controller/pkg/chcloser"
+	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/gin-gonic/gin"
 	"github.com/kr/pty"
+	log "github.com/sirupsen/logrus"
 	"go.uber.org/zap"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -45,6 +48,7 @@ var (
 	onExitCommand string
 	chancloser    = &chcloser.ChannelCloser{}
 	envAuthKey    string
+	serverName    string
 )
 
 func main() {
@@ -52,6 +56,10 @@ func main() {
 	defer loggerProd.Sync()
 	logger = loggerProd.Sugar()
 
+	serverName = os.Getenv("SRCDS_SERVER_NAME")
+	if serverName == "" {
+		logger.Fatal("no server name given through env var")
+	}
 	envRunnerPort := os.Getenv("SRCDS_RUNNER_PORT")
 	if envRunnerPort == "" {
 		logger.Fatal("no runner port given through env var")
@@ -66,8 +74,8 @@ func main() {
 	}
 
 	onExitCommand := os.Getenv("SRCDS_RUNNER_ONEXIT_COMMAND")
-	if envRunnerPort == "" {
-		logger.Warn("no onExitCommand given through env var")
+	if onExitCommand == "" {
+		logger.Warn("no / empty onExitCommand given through env var")
 	}
 
 	if len(os.Args) <= 1 {
@@ -122,7 +130,6 @@ func main() {
 	}
 	defer func() {
 		if tty == nil {
-			//logger.Error("failed to close tty as it is nil")
 			return
 		}
 		if err = tty.Close(); err != nil {
@@ -152,6 +159,12 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		reconciliation(stopCh)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		select {
 		case <-sigs:
 		case <-stopCh:
@@ -159,9 +172,7 @@ func main() {
 
 		mutx.Lock()
 
-		if tty == nil {
-			//logger.Error("cmd tty is (already) nil")
-		} else {
+		if tty != nil {
 			if onExitCommand != "" {
 				logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
 
@@ -260,8 +271,6 @@ func rconPwUpdate(c *gin.Context) {
 		return
 	}
 	mutx.Unlock()
-
-	envAuthKey = password
 }
 
 func copyLogs(r io.Reader) error {
@@ -283,6 +292,42 @@ func copyLogs(r io.Reader) error {
 		if err != nil {
 			//logger.Error(err)
 			return err
+		}
+	}
+}
+
+// reconciliation loop runs every 5 minutes to keep the RCON password in sync
+func reconciliation(stopCh chan struct{}) {
+	for {
+		config.Cfg = &config.Config{}
+
+		out, err := ioutil.ReadFile("/config/config.yaml")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err = yaml.Unmarshal(out, config.Cfg); err != nil {
+			log.Fatal(err)
+		}
+		if err = config.Cfg.Verify(); err != nil {
+			log.Fatal(err)
+		}
+
+		_, serverCfg := config.Cfg.Servers.GetByName(serverName)
+		if serverCfg == nil {
+			log.Errorf("no config for server %s found in config file", serverName)
+		} else {
+			mutx.Lock()
+			if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", serverCfg.RCON.Password))); err != nil {
+				mutx.Unlock()
+				log.Errorf("error during command writing for rcon pw update to server")
+				return
+			}
+			mutx.Unlock()
+		}
+		select {
+		case <-time.After(5 * time.Minute):
+		case <-stopCh:
+			return
 		}
 	}
 }

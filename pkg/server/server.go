@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -42,9 +43,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	SRCDSRunnerAuthKeyEnvKey = "SRCDS_RUNNER_AUTH_KEY"
+)
+
 var (
 	DockerCli *client.Client
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func List() error {
 	w := tabwriter.NewWriter(os.Stdout, 1, 0, 1, ' ', tabwriter.Debug)
@@ -109,14 +118,19 @@ func Start(serverName string) error {
 		}
 
 		envs := []string{
+			fmt.Sprintf("SRCDS_SERVER_NAME=%s", serverCfg.Name),
 			fmt.Sprintf("SRCDS_RUNNER_PORT=%d", serverCfg.RunnerPort),
-			fmt.Sprintf("SRCDS_RUNNER_AUTH_KEY=%s", serverCfg.RCON.Password),
+			fmt.Sprintf("%s=%s", SRCDSRunnerAuthKeyEnvKey, util.RandString(128)),
 		}
 		if serverCfg.OnExitCommand != "" {
 			envs = append(envs, fmt.Sprintf("SRCDS_RUNNER_ONEXIT_COMMAND=%s", serverCfg.OnExitCommand))
 		}
 
 		contCfg := &container.Config{
+			Labels: map[string]string{
+				"app":        "gameserver",
+				"managed-by": "srcds_controller",
+			},
 			Env:         envs,
 			Cmd:         contArgs,
 			AttachStdin: true,
@@ -129,8 +143,7 @@ func Start(serverName string) error {
 		}
 		contHostCfg := &container.HostConfig{
 			RestartPolicy: container.RestartPolicy{
-				Name:              "on-failure",
-				MaximumRetryCount: 3,
+				Name: "no",
 			},
 			Mounts: []mount.Mount{
 				{
@@ -143,6 +156,12 @@ func Start(serverName string) error {
 					Type:     mount.TypeBind,
 					Source:   "/etc/timezone",
 					Target:   "/etc/timezone",
+					ReadOnly: true,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   config.FilePath,
+					Target:   "/config/config.yaml",
 					ReadOnly: true,
 				},
 				{
@@ -296,12 +315,25 @@ func SendCommand(serverName string, args []string) error {
 		return fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	if _, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName)); err != nil {
+	cont, err := GetServerContainer(serverName)
+	if err != nil {
 		return err
 	}
 
+	var authKey string
+	for _, env := range cont.Config.Env {
+		if strings.HasPrefix(env, fmt.Sprintf("%s=", SRCDSRunnerAuthKeyEnvKey)) {
+			authKey = strings.Split(env, "=")[1]
+			break
+		}
+	}
+
+	if authKey == "" {
+		return fmt.Errorf("server container %s does not have an auth key set", serverName)
+	}
+
 	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/", serverCfg.RunnerPort), url.Values{
-		"auth-key": {serverCfg.RCON.Password},
+		"auth-key": {authKey},
 		"command":  {strings.Join(args, " ")},
 	})
 	if err != nil {
@@ -326,8 +358,25 @@ func UpdateRCONPassword(serverName string, password string) error {
 		return fmt.Errorf("no server config found for %s", serverName)
 	}
 
+	cont, err := GetServerContainer(serverName)
+	if err != nil {
+		return err
+	}
+
+	var authKey string
+	for _, env := range cont.Config.Env {
+		if strings.HasPrefix(env, fmt.Sprintf("%s=", SRCDSRunnerAuthKeyEnvKey)) {
+			authKey = strings.Split(env, "=")[1]
+			break
+		}
+	}
+
+	if authKey == "" {
+		return fmt.Errorf("server container %s does not have an auth key set", serverName)
+	}
+
 	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/rconPwUpdate", serverCfg.RunnerPort), url.Values{
-		"auth-key": {serverCfg.RCON.Password},
+		"auth-key": {authKey},
 		"password": {password},
 	})
 	if err != nil {

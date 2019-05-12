@@ -17,11 +17,13 @@ limitations under the License.
 package checker
 
 import (
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/galexrt/srcds_controller/pkg/actionexec"
 	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/server"
+	log "github.com/sirupsen/logrus"
 )
 
 // ResultCounter
@@ -66,16 +68,21 @@ func (r ResultServerList) Add(result Result) {
 	r.evaluate(r[result.Server.Name][result.Check.Name], result.Check, result.Server)
 }
 
-func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, server config.Server) {
+func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, serverCfg config.Server) {
 	wg := sync.WaitGroup{}
-	logger.Debugf("evaluating result counter for server %s check %s", server.Name, check.Name)
+	log.Debugf("evaluating result counter for server %s check %s", serverCfg.Name, check.Name)
 	if (check.Limit.Count != 0 && counter.Count >= check.Limit.Count) || (check.Limit.After != 0 && counter.LastTime.Sub(counter.FirstTime) >= check.Limit.After) {
-		logger.Infof("result counter over limit for server %s check %s", server.Name, check.Name)
+		log.Infof("result counter over limit for server %s check %s", serverCfg.Name, check.Name)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for _, action := range check.Limit.Actions {
-				actionexec.RunAction(server.Path, action, server)
+				switch strings.ToLower(action) {
+				case "restart":
+					if err := server.Restart(serverCfg.Name); err != nil {
+						log.Error(err)
+					}
+				}
 			}
 		}()
 		counter.Count = 0
