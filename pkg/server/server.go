@@ -329,7 +329,7 @@ func SendCommand(serverName string, args []string) error {
 	}
 
 	if authKey == "" {
-		return fmt.Errorf("server container %s does not have an auth key set", serverName)
+		authKey = serverCfg.RCON.Password
 	}
 
 	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/", serverCfg.RunnerPort), url.Values{
@@ -358,7 +358,7 @@ func GetServerContainer(serverName string) (types.ContainerJSON, error) {
 		return cont, fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	cont, err = DockerCli.ContainerInspect(context.Background(), serverName)
+	cont, err = DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil {
 		return cont, err
 	}
