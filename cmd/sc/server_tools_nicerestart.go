@@ -52,6 +52,13 @@ var serverToolsNiceRestart = &cobra.Command{
 		if len(servers) == 0 {
 			return fmt.Errorf("no server(s) given, please put a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
 		}
+
+		for _, server := range servers {
+			if _, serverCfg := config.Cfg.Servers.GetByName(server); serverCfg == nil {
+				return fmt.Errorf("server %s not found in config", server)
+			}
+		}
+
 		duration := viper.GetDuration("duration")
 
 		errorOccured := false

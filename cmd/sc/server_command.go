@@ -56,6 +56,13 @@ var serverCommandCmd = &cobra.Command{
 		if !viper.GetBool(AllServers) && len(args) <= 1 {
 			return fmt.Errorf("no command to send to the servers given")
 		}
+
+		for _, server := range servers {
+			if _, serverCfg := config.Cfg.Servers.GetByName(server); serverCfg == nil {
+				return fmt.Errorf("server %s not found in config", server)
+			}
+		}
+
 		errorOccured := false
 		wg := sync.WaitGroup{}
 		for _, serverName := range servers {
