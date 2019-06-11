@@ -74,7 +74,7 @@ var serverRestartCmd = &cobra.Command{
 }
 
 func init() {
-	serverRestartCmd.PersistentFlags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
+	serverRestartCmd.PersistentFlags().DurationP("timeout", "t", 4*time.Second, "Server stop timeout before kill will be triggered")
 	viper.BindPFlag("timeout", serverRestartCmd.PersistentFlags().Lookup("timeout"))
 
 	rootCmd.AddCommand(serverRestartCmd)

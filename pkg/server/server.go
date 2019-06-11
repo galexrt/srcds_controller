@@ -223,16 +223,10 @@ func Stop(serverName string) error {
 	containerID := cont.ID
 
 	if cont.State.Running {
-		log.Infof("sending SIGTERM signal to server %s ...", serverName)
-		if err = DockerCli.ContainerKill(context.Background(), containerID, "SIGTERM"); err != nil {
-			log.Error(err)
+		duration := viper.GetDuration("timeout")
+		if err = DockerCli.ContainerStop(context.Background(), containerID, &duration); err != nil {
+			return err
 		}
-		log.Infof("sent SIGTERM signal to server %s. now waiting at maximum 5 before sending kill signal ...", serverName)
-	}
-
-	duration := viper.GetDuration("timeout")
-	if err = DockerCli.ContainerStop(context.Background(), containerID, &duration); err != nil {
-		return err
 	}
 
 	log.Infof("stopped server %s.", serverName)

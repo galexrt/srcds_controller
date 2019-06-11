@@ -59,6 +59,19 @@ var serverConsoleCmd = &cobra.Command{
 			}
 		}
 
+		/*
+			// Get current work
+			home, err := homedir.Dir()
+			if err != nil {
+				log.Fatal(err)
+			}
+			histFilePath := path.Join(home, ".srcds_controller_history")
+			histFile, err := os.OpenFile(histFilePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer histFile.Close()*/
+
 		history := tui.NewVBox()
 
 		historyScroll := tui.NewScrollArea(history)
@@ -75,8 +88,9 @@ var serverConsoleCmd = &cobra.Command{
 			if e.Text() == "" {
 				return
 			}
+			command := e.Text()
 			for _, serverName := range servers {
-				if err := server.SendCommand(serverName, []string{e.Text()}); err != nil {
+				if err := server.SendCommand(serverName, []string{command}); err != nil {
 					history.Append(tui.NewHBox(
 						tui.NewLabel("ERROR"),
 						tui.NewLabel(err.Error()),
@@ -107,18 +121,18 @@ var serverConsoleCmd = &cobra.Command{
 		errors := make(chan error)
 
 		for _, serverName := range servers {
-			stdin, stderr, err := server.Logs(serverName, 0*time.Millisecond, 10)
+			stdout, stderr, err := server.Logs(serverName, 0*time.Millisecond, 10)
 			if err != nil {
 				ui.Quit()
 				return err
 			}
-			if stdin == nil || stderr == nil {
+			if stdout == nil || stderr == nil {
 				ui.Quit()
 				return fmt.Errorf("server.Logs returned nil body. something is wrong. %+v", err)
 			}
 
 			go func(serverName string) {
-				scanner := bufio.NewScanner(stdin)
+				scanner := bufio.NewScanner(stdout)
 				for scanner.Scan() {
 					msg := scanner.Text()
 					if len(servers) > 1 {

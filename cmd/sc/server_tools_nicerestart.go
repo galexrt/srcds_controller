@@ -132,10 +132,11 @@ var serverToolsNiceRestart = &cobra.Command{
 				break timeLoop
 			}
 
-			if byMinuteAnnouncement && secsRemaining%60 == 0 {
+			var mins float64
+			mins = float64(secsRemaining) / float64(60)
+			if byMinuteAnnouncement && mins == float64(int64(mins)) {
 				log.Info("countdown: another minute is over")
-				log.Debug("countdown: need to announce")
-				command := fmt.Sprintf(viper.GetString("announce-minutes"), int64(secsRemaining/60))
+				command := fmt.Sprintf(viper.GetString("announce-minutes"), mins)
 				sendCommandInParallel(command)
 			} else if contains(announceTimes, strconv.Itoa(secsRemaining)) {
 				log.Debug("countdown: need to announce")
