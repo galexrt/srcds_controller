@@ -20,12 +20,16 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/linehistory"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/marcusolsson/tui-go"
+	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -59,18 +63,60 @@ var serverConsoleCmd = &cobra.Command{
 			}
 		}
 
-		/*
-			// Get current work
+		historyStore := linehistory.NewHistory()
+
+		var histFile *os.File
+
+		if viper.GetBool("history") {
+			// Get current home dir
 			home, err := homedir.Dir()
 			if err != nil {
 				log.Fatal(err)
 			}
+
 			histFilePath := path.Join(home, ".srcds_controller_history")
-			histFile, err := os.OpenFile(histFilePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+			histFile, err = os.OpenFile(histFilePath, os.O_RDONLY|os.O_CREATE, 0660)
 			if err != nil {
 				log.Fatal(err)
 			}
-			defer histFile.Close()*/
+
+			out, err := ioutil.ReadAll(histFile)
+			if err != nil {
+				histFile.Close()
+				log.Fatal(err)
+			}
+			histFile.Close()
+
+			parts := strings.Split(string(out), "\n")
+			partsLen := len(parts)
+
+			wantedHistoryLength := 51
+			if partsLen >= wantedHistoryLength {
+				histFile, err = os.OpenFile(histFilePath, os.O_WRONLY|os.O_TRUNC, 0660)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				parts = parts[partsLen-wantedHistoryLength:]
+				if _, err := histFile.WriteString(strings.Join(parts, "\n")); err != nil {
+					histFile.Close()
+					log.Fatal(err)
+				}
+				histFile.Close()
+			}
+			histFile, err = os.OpenFile(histFilePath, os.O_WRONLY|os.O_APPEND, 0660)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer histFile.Close()
+
+			for _, line := range parts {
+				if line == "" {
+					continue
+				}
+				historyStore.Add(line)
+			}
+		}
 
 		history := tui.NewVBox()
 
@@ -92,11 +138,21 @@ var serverConsoleCmd = &cobra.Command{
 			for _, serverName := range servers {
 				if err := server.SendCommand(serverName, []string{command}); err != nil {
 					history.Append(tui.NewHBox(
-						tui.NewLabel("ERROR"),
+						tui.NewLabel("ERROR "),
 						tui.NewLabel(err.Error()),
 						tui.NewSpacer(),
 					))
 				}
+			}
+			historyStore.Add(command)
+			if viper.GetBool("history") {
+				go func(line string) {
+					if histFile != nil {
+						if _, err := histFile.WriteString(command + "\n"); err != nil {
+							log.Fatal(err)
+						}
+					}
+				}(command)
 			}
 			input.SetText("")
 		})
@@ -105,10 +161,10 @@ var serverConsoleCmd = &cobra.Command{
 		inputBox.SetBorder(true)
 		inputBox.SetSizePolicy(tui.Expanding, tui.Maximum)
 
-		chat := tui.NewVBox(historyBox, inputBox)
-		chat.SetSizePolicy(tui.Expanding, tui.Expanding)
+		console := tui.NewVBox(historyBox, inputBox)
+		console.SetSizePolicy(tui.Expanding, tui.Expanding)
 
-		root := tui.NewHBox(chat)
+		root := tui.NewHBox(console)
 
 		ui, err := tui.New(root)
 		if err != nil {
@@ -116,6 +172,20 @@ var serverConsoleCmd = &cobra.Command{
 		}
 		ui.SetKeybinding("Esc", func() { ui.Quit() })
 		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
+		ui.SetKeybinding("PgUp", func() {
+			historyScroll.Scroll(0, -1)
+		})
+		ui.SetKeybinding("PgDn", func() {
+			historyScroll.Scroll(0, 1)
+		})
+		ui.SetKeybinding("Up", func() {
+			histRet, _ := historyStore.Older(input.Text())
+			input.SetText(histRet)
+		})
+		ui.SetKeybinding("Down", func() {
+			histRet, _ := historyStore.Newer(input.Text())
+			input.SetText(histRet)
+		})
 
 		outChan := make(chan string)
 		errors := make(chan error)
@@ -135,6 +205,7 @@ var serverConsoleCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stdout)
 				for scanner.Scan() {
 					msg := scanner.Text()
+					//outChan <- fmt.Sprintf("TEST : %#X : TEST", msg)
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
 					}
@@ -149,6 +220,7 @@ var serverConsoleCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stderr)
 				for scanner.Scan() {
 					msg := scanner.Text()
+					//outChan <- fmt.Sprintf("TEST : %#X : TEST", msg)
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
 					}
@@ -183,5 +255,8 @@ var serverConsoleCmd = &cobra.Command{
 }
 
 func init() {
+	serverConsoleCmd.PersistentFlags().Bool("history", true, "If history should be enabled")
+	viper.BindPFlag("history", serverConsoleCmd.PersistentFlags().Lookup("history"))
+
 	rootCmd.AddCommand(serverConsoleCmd)
 }
