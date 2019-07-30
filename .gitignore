@@ -36,3 +36,5 @@ srcds_runner
 
 vendor.orig/
 .build/
+
+/vendor/

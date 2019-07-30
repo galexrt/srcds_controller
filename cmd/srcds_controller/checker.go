@@ -66,7 +66,7 @@ func init() {
 }
 
 func initDockerCli(cmd *cobra.Command, args []string) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.NewEnvClient()
 	if err != nil {
 		return err
 	}

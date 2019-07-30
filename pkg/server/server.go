@@ -265,7 +265,7 @@ func Remove(serverName string) error {
 	return nil
 }
 
-func Logs(serverName string, since time.Duration, tail int) (io.ReadCloser, io.ReadCloser, error) {
+func Logs(serverName string, since time.Duration, tail int, follow bool) (io.ReadCloser, io.ReadCloser, error) {
 	log.Infof("showing logs of server %s ...\n", serverName)
 
 	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
@@ -278,8 +278,8 @@ func Logs(serverName string, since time.Duration, tail int) (io.ReadCloser, io.R
 	}
 
 	args := []string{"logs"}
-	if viper.GetBool("follow") {
-		args = append(args, "-f")
+	if follow {
+		args = append(args, "--follow")
 	}
 
 	if since != 0*time.Millisecond {

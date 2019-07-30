@@ -56,7 +56,7 @@ var serverLogsCmd = &cobra.Command{
 		outChan := make(chan string)
 
 		for _, serverName := range servers {
-			stdin, stderr, err := server.Logs(serverName, viper.GetDuration("since"), viper.GetInt("tail"))
+			stdin, stderr, err := server.Logs(serverName, viper.GetDuration("since"), viper.GetInt("tail"), viper.GetBool("follow"))
 			if err != nil {
 				return err
 			}
