@@ -30,15 +30,9 @@ import (
 )
 
 func CheckForDockerEvents(stopCh <-chan struct{}) {
-	filterArgs := filters.NewArgs(
-		filters.KeyValuePair{
-			Key:   "app",
-			Value: "gameserver",
-		},
-		filters.KeyValuePair{
-			Key:   "managed-by",
-			Value: "srcds_controller",
-		})
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("app", "gameserver")
+	filterArgs.Add("managed-by", "srcds_controller")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
