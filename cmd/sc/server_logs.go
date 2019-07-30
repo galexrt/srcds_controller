@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
@@ -52,8 +53,10 @@ var serverLogsCmd = &cobra.Command{
 			}
 		}
 
+		var wg sync.WaitGroup
 		errors := make(chan error)
 		outChan := make(chan string)
+		doneCh := make(chan struct{})
 
 		for _, serverName := range servers {
 			stdin, stderr, err := server.Logs(serverName, viper.GetDuration("since"), viper.GetInt("tail"), viper.GetBool("follow"))
@@ -64,7 +67,9 @@ var serverLogsCmd = &cobra.Command{
 				return fmt.Errorf("server.Logs returned no response. something is wrong")
 			}
 
+			wg.Add(2)
 			go func(serverName string) {
+				defer wg.Done()
 				scanner := bufio.NewScanner(stdin)
 				for scanner.Scan() {
 					msg := scanner.Text()
@@ -79,6 +84,7 @@ var serverLogsCmd = &cobra.Command{
 				}
 			}(serverName)
 			go func(serverName string) {
+				defer wg.Done()
 				scanner := bufio.NewScanner(stderr)
 				for scanner.Scan() {
 					msg := scanner.Text()
@@ -94,12 +100,19 @@ var serverLogsCmd = &cobra.Command{
 			}(serverName)
 		}
 
+		go func() {
+			wg.Wait()
+			close(doneCh)
+		}()
+
 		for {
 			select {
 			case out := <-outChan:
 				fmt.Println(out)
 			case erro := <-errors:
 				return erro
+			case <-doneCh:
+				return nil
 			}
 		}
 	},
