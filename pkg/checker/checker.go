@@ -50,12 +50,12 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 
 	for _, server := range config.Cfg.Servers {
 		wg.Add(1)
-		go func(server config.Server, stopCh <-chan struct{}) {
+		go func(server *config.Server, stopCh <-chan struct{}) {
 			defer wg.Done()
 			for _, check := range server.Checks {
 				log.Infof("starting check %s for server %s", server.Name, check.Name)
 				wg.Add(1)
-				go func(check config.Check, server config.Server) {
+				go func(check config.Check, server *config.Server) {
 					defer wg.Done()
 					for {
 						log.Debugf("running check %s", check.Name)

@@ -40,7 +40,7 @@ type ResultServerList map[string]map[string]*ResultCounter
 // Result
 type Result struct {
 	Check  config.Check
-	Server config.Server
+	Server *config.Server
 	Return bool
 }
 
@@ -69,7 +69,7 @@ func (r ResultServerList) Add(result Result) {
 	r.evaluate(r[result.Server.Name][result.Check.Name], result.Check, result.Server)
 }
 
-func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, serverCfg config.Server) {
+func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, serverCfg *config.Server) {
 	wg := sync.WaitGroup{}
 	log.Debugf("evaluating result counter for server %s check %s", serverCfg.Name, check.Name)
 	if (check.Limit.Count != 0 && counter.Count >= check.Limit.Count) || (check.Limit.After != 0 && counter.LastTime.Sub(counter.FirstTime) >= check.Limit.After) {
