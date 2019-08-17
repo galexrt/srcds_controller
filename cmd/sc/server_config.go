@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
@@ -81,6 +82,8 @@ var serverSrvCcfgCmd = &cobra.Command{
 		if err := ioutil.WriteFile(cfgFile, out, 0644); err != nil {
 			return err
 		}
+
+		log.Infof("updated config $s for servers %s", key, strings.Join(servers, ", "))
 
 		return nil
 	},
