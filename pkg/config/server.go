@@ -23,7 +23,7 @@ import (
 )
 
 // Servers list of Server
-type Servers []Server
+type Servers []*Server
 
 // Server config/info for a server
 type Server struct {
@@ -40,7 +40,7 @@ type Server struct {
 	OnExitCommand string               `yaml:"onExitCommand"`
 	Enabled       bool                 `yaml:"enabled"`
 	GameID        int64                `yaml:"gameID"`
-	Resources     *container.Resources `yaml:"resources"`
+	Resources     *container.Resources `yaml:"resources,omitempty"`
 }
 
 // RunOptions run options such as user and group id to run the server as.
@@ -59,7 +59,7 @@ func (s Servers) GetByName(name string) (int, *Server) {
 	name = strings.ToLower(name)
 	for index, server := range s {
 		if strings.ToLower(server.Name) == name {
-			return index, &server
+			return index, server
 		}
 	}
 	return -1, nil
