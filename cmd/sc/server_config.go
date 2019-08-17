@@ -82,7 +82,7 @@ var serverSrvCcfgCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("updated config $s for servers %s", key, strings.Join(servers, ", "))
+		fmt.Println("Updated " + key + " config key for servers " + strings.Join(servers, ", "))
 
 		return nil
 	},
