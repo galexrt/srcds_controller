@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/acarl005/stripansi"
 	"github.com/galexrt/srcds_controller/pkg/config"
@@ -65,7 +64,6 @@ var serverToolsUpdate = &cobra.Command{
 		}
 
 		errorOccured := false
-		wg := sync.WaitGroup{}
 		for _, serverName := range servers {
 			_, serverCfg := config.Cfg.Servers.GetByName(serverName)
 			if serverCfg == nil {
@@ -78,41 +76,33 @@ var serverToolsUpdate = &cobra.Command{
 				"+app_update 4020", "validate",
 				"+quit",
 			}
-			wg.Add(1)
-			go func(serverName string) {
-				defer wg.Done()
-				command := exec.Command(path.Join(home, "steamcmd/steamcmd.sh"), commandArgs...)
-				tty, err := pty.Start(command)
-				if err != nil {
-					log.Errorf("%+v", err)
-					errorOccured = true
+			command := exec.Command(path.Join(home, "steamcmd/steamcmd.sh"), commandArgs...)
+			tty, err := pty.Start(command)
+			if err != nil {
+				log.Errorf("%+v", err)
+				break
+			}
+			defer func() {
+				if tty == nil {
+					log.Debug("failed to close tty as it is nil")
 					return
 				}
-				defer func() {
-					if tty == nil {
-						log.Debug("failed to close tty as it is nil")
-						return
-					}
-					if err = tty.Close(); err != nil {
-						log.Debug(err)
-						return
-					}
-				}()
-
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					log.Debug("beginning to stream logs")
-					copyLogs(tty)
-				}()
-
-				if err := command.Wait(); err != nil {
-					log.Errorf("%+v", err)
-					errorOccured = true
+				if err = tty.Close(); err != nil {
+					log.Debug(err)
+					return
 				}
-			}(serverName)
+			}()
+
+			go func() {
+				log.Debug("beginning to stream logs")
+				copyLogs(tty)
+			}()
+
+			if err := command.Wait(); err != nil {
+				log.Errorf("%+v", err)
+				errorOccured = true
+			}
 		}
-		wg.Wait()
 
 		if errorOccured {
 			return fmt.Errorf("error when sending commands")
