@@ -50,13 +50,13 @@ func Run(check config.Check, server *config.Server) bool {
 	}
 	defer con.Close()
 
-	out, err := con.Send("sv_lan")
+	out, err := con.Send("maxplayers")
 	if err != nil {
-		log.Errorf("error executing rcon `sv_lan` command. %+v", err)
-		log.Debugf("rcond `sv_lan` command output: %s", out)
+		log.Errorf("error executing rcon `maxplayers` command. %+v", err)
+		log.Debugf("rcond `maxplayers` command output: %s", out)
 		return false
 	}
-	log.Debugf("rcond `sv_lan` command output: %s", out)
+	log.Debugf("rcond `maxplayers` command output: %s", out)
 
 	return true
 }
