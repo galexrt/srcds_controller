@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
@@ -69,7 +70,8 @@ func handleDockerEvent(event events.Message) error {
 		if !viper.GetBool("dry-run") {
 			log.Debug("dry-run mode active, server restart")
 		} else {
-			if err := server.Restart(serverName); err != nil {
+			time.Sleep(5 * time.Second)
+			if err := server.Start(serverName); err != nil {
 				return err
 			}
 		}
