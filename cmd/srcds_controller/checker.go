@@ -40,7 +40,13 @@ var checkerCmd = &cobra.Command{
 	Short:             "Run the srcds server checker",
 	Hidden:            true,
 	PersistentPreRunE: initDockerCli,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		level, err := log.ParseLevel(viper.GetString("log-level"))
+		if err != nil {
+			return err
+		}
+		log.SetLevel(level)
+
 		stopCh := make(chan struct{})
 		sigCh := make(chan os.Signal)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -56,12 +62,15 @@ var checkerCmd = &cobra.Command{
 		<-sigCh
 		close(stopCh)
 		wg.Wait()
+		return nil
 	},
 }
 
 func init() {
 	checkerCmd.PersistentFlags().Bool("dry-run", false, "dry run mode")
+	checkerCmd.PersistentFlags().String("log-level", "INFO", "log level")
 	viper.BindPFlag("dry-run", checkerCmd.PersistentFlags().Lookup("dry-run"))
+	viper.BindPFlag("log-level", checkerCmd.PersistentFlags().Lookup("log-level"))
 	rootCmd.AddCommand(checkerCmd)
 }
 
