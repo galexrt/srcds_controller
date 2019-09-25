@@ -67,7 +67,7 @@ var checkerCmd = &cobra.Command{
 }
 
 func init() {
-	checkerCmd.PersistentFlags().Bool("dry-run", false, "dry run mode")
+	checkerCmd.PersistentFlags().Bool("dry-run", true, "dry run mode")
 	checkerCmd.PersistentFlags().String("log-level", "INFO", "log level")
 	viper.BindPFlag("dry-run", checkerCmd.PersistentFlags().Lookup("dry-run"))
 	viper.BindPFlag("log-level", checkerCmd.PersistentFlags().Lookup("log-level"))

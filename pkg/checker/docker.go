@@ -67,7 +67,7 @@ func handleDockerEvent(event events.Message) error {
 		}
 		serverName := event.Actor.Attributes["name"]
 
-		if !viper.GetBool("dry-run") {
+		if viper.GetBool("dry-run") {
 			log.Debug("dry-run mode active, server restart")
 		} else {
 			time.Sleep(5 * time.Second)

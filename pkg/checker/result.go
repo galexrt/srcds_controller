@@ -80,7 +80,7 @@ func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, s
 			for _, action := range check.Limit.Actions {
 				switch strings.ToLower(action) {
 				case "restart":
-					if !viper.GetBool("dry-run") {
+					if viper.GetBool("dry-run") {
 						log.Debug("dry-run mode active, server restart")
 					} else {
 						if err := server.SendCommand(serverCfg.Name, []string{"say", "SRCDS CHECKER RESTART MARKER"}); err != nil {
