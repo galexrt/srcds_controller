@@ -81,14 +81,16 @@ func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, s
 				switch strings.ToLower(action) {
 				case "restart":
 					if viper.GetBool("dry-run") {
-						log.Debug("dry-run mode active, server restart")
+						log.Debugf("dry-run mode active, server %s restart", serverCfg.Name)
 					} else {
+						log.Infof("need to restart server %s", serverCfg.Name)
 						if err := server.SendCommand(serverCfg.Name, []string{"say", "SRCDS CHECKER RESTART MARKER"}); err != nil {
 							log.Error(err)
 						}
 						if err := server.Restart(serverCfg.Name); err != nil {
 							log.Error(err)
 						}
+						log.Infof("server %s restarted", serverCfg.Name)
 					}
 				}
 			}
@@ -97,6 +99,8 @@ func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, s
 		now := time.Now()
 		counter.FirstTime = now
 		counter.LastTime = now
+	} else {
+		log.Debugf("nothing to do for server %s", serverCfg.Name)
 	}
 	wg.Wait()
 	return
