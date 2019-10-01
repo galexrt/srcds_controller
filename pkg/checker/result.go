@@ -49,7 +49,12 @@ func (r ResultServerList) Add(result Result) {
 	if _, ok := r[result.Server.Name]; !ok {
 		r[result.Server.Name] = map[string]*ResultCounter{}
 	}
-	if !result.Return {
+	if result.Return {
+		if _, ok := r[result.Server.Name][result.Check.Name]; ok {
+			delete(r[result.Server.Name], result.Check.Name)
+		}
+		return
+	} else {
 		if _, ok := r[result.Server.Name][result.Check.Name]; !ok {
 			r[result.Server.Name][result.Check.Name] = &ResultCounter{
 				Count:     0,
@@ -59,11 +64,6 @@ func (r ResultServerList) Add(result Result) {
 		}
 		r[result.Server.Name][result.Check.Name].Count++
 		r[result.Server.Name][result.Check.Name].LastTime = time.Now()
-	} else {
-		if _, ok := r[result.Server.Name][result.Check.Name]; ok {
-			delete(r[result.Server.Name], result.Check.Name)
-		}
-		return
 	}
 
 	r.evaluate(r[result.Server.Name][result.Check.Name], result.Check, result.Server)

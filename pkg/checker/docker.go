@@ -50,12 +50,12 @@ func CheckForDockerEvents(stopCh <-chan struct{}) {
 		case event := <-eventStream:
 			if _, ok := event.Actor.Attributes["name"]; ok {
 				event.Actor.Attributes["name"] = strings.TrimPrefix(event.Actor.Attributes["name"], config.Cfg.Docker.NamePrefix)
+				if err := handleDockerEvent(event); err != nil {
+					log.Error(err)
+				}
 			} else {
 				log.Error(fmt.Errorf("no container name in docker event attributes"))
 				break
-			}
-			if err := handleDockerEvent(event); err != nil {
-				log.Error(err)
 			}
 		case err := <-errChan:
 			if err != nil {
