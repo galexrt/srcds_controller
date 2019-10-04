@@ -55,15 +55,15 @@ func (r ResultServerList) Add(result Result) {
 		}
 		return
 	} else {
+		now := time.Now()
 		if _, ok := r[result.Server.Name][result.Check.Name]; !ok {
 			r[result.Server.Name][result.Check.Name] = &ResultCounter{
 				Count:     0,
-				FirstTime: time.Now(),
-				LastTime:  time.Now(),
+				FirstTime: now,
 			}
 		}
 		r[result.Server.Name][result.Check.Name].Count++
-		r[result.Server.Name][result.Check.Name].LastTime = time.Now()
+		r[result.Server.Name][result.Check.Name].LastTime = now
 	}
 
 	r.evaluate(r[result.Server.Name][result.Check.Name], result.Check, result.Server)
@@ -74,6 +74,12 @@ func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, s
 	log.Debugf("evaluating result counter for server %s check %s", serverCfg.Name, check.Name)
 	if (check.Limit.Count != 0 && counter.Count >= check.Limit.Count) || (check.Limit.After != 0 && counter.LastTime.Sub(counter.FirstTime) >= check.Limit.After) {
 		log.Infof("result counter over limit for server %s check %s", serverCfg.Name, check.Name)
+
+		counter.Count = 0
+		now := time.Now()
+		counter.FirstTime = now
+		counter.LastTime = now
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -95,10 +101,6 @@ func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, s
 				}
 			}
 		}()
-		counter.Count = 0
-		now := time.Now()
-		counter.FirstTime = now
-		counter.LastTime = now
 	} else {
 		log.Debugf("nothing to do for server %s", serverCfg.Name)
 	}

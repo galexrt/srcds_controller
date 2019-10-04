@@ -13,14 +13,16 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/galexrt/go-rcon v0.0.0-20191001205153-b64b9535fb32
+	github.com/galexrt/go-rcon v0.0.0-20191004120034-77f90a2143f9
 	github.com/gdamore/tcell v1.3.0 // indirect
 	github.com/gin-gonic/gin v1.4.0
+	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/google/go-github/v25 v25.1.3 // indirect
 	github.com/google/pprof v0.0.0-20190930153522-6ce02741cba3 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.7
+	github.com/jstemmer/go-junit-report v0.9.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pty v1.1.8
@@ -40,20 +42,20 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	go.opencensus.io v0.22.1 // indirect
 	go.uber.org/zap v1.10.0
-	golang.org/x/crypto v0.0.0-20191001170739-f9e2070545dc // indirect
-	golang.org/x/exp v0.0.0-20190927203820-447a159532ef // indirect
+	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc // indirect
+	golang.org/x/exp v0.0.0-20191002040644-a1355ae1e2c3 // indirect
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a // indirect
 	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
-	golang.org/x/mobile v0.0.0-20190923204409-d3ece3b6da5f // indirect
-	golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3 // indirect
+	golang.org/x/mobile v0.0.0-20191002175909-6d0d39b2ca82 // indirect
+	golang.org/x/net v0.0.0-20191003171128-d98b1b443823 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20191001151750-bb3f8db39f24 // indirect
+	golang.org/x/sys v0.0.0-20191003212358-c178f38b412c // indirect
 	golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0 // indirect
-	golang.org/x/tools v0.0.0-20191001184121-329c8d646ebe // indirect
+	golang.org/x/tools v0.0.0-20191004055002-72853e10c5a3 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/appengine v1.6.4 // indirect
-	google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c // indirect
+	google.golang.org/genproto v0.0.0-20191002211648-c459b9ce5143 // indirect
 	google.golang.org/grpc v1.24.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/yaml.v2 v2.2.3
+	gopkg.in/yaml.v2 v2.2.4
 )
