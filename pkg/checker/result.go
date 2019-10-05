@@ -54,25 +54,26 @@ func (r ResultServerList) Add(result Result) {
 			delete(r[result.Server.Name], result.Check.Name)
 		}
 		return
-	} else {
-		now := time.Now()
-		if _, ok := r[result.Server.Name][result.Check.Name]; !ok {
-			r[result.Server.Name][result.Check.Name] = &ResultCounter{
-				Count:     0,
-				FirstTime: now,
-			}
-		}
-		r[result.Server.Name][result.Check.Name].Count++
-		r[result.Server.Name][result.Check.Name].LastTime = now
 	}
+	now := time.Now()
+	if _, ok := r[result.Server.Name][result.Check.Name]; !ok {
+		r[result.Server.Name][result.Check.Name] = &ResultCounter{
+			Count:     0,
+			FirstTime: now,
+		}
+	}
+	r[result.Server.Name][result.Check.Name].Count++
+	r[result.Server.Name][result.Check.Name].LastTime = now
 
-	r.evaluate(r[result.Server.Name][result.Check.Name], result.Check, result.Server)
-}
+	serverCfg := result.Server
+	check := result.Check
+	counter := r[result.Server.Name][result.Check.Name]
 
-func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, serverCfg *config.Server) {
-	wg := sync.WaitGroup{}
 	log.Debugf("evaluating result counter for server %s check %s", serverCfg.Name, check.Name)
-	if (check.Limit.Count != 0 && counter.Count >= check.Limit.Count) || (check.Limit.After != 0 && counter.LastTime.Sub(counter.FirstTime) >= check.Limit.After) {
+	log.Debugf("current state: count: %d/%d, time: %s - %s", counter.Count, check.Limit.Count, counter.LastTime.Sub(counter.FirstTime), check.Limit.After)
+	if (check.Limit.Count != 0 && counter.Count >= check.Limit.Count) ||
+		(check.Limit.After != 0 && counter.LastTime.Sub(counter.FirstTime) >= check.Limit.After) {
+
 		log.Infof("result counter over limit for server %s check %s", serverCfg.Name, check.Name)
 
 		counter.Count = 0
@@ -80,30 +81,37 @@ func (r ResultServerList) evaluate(counter *ResultCounter, check config.Check, s
 		counter.FirstTime = now
 		counter.LastTime = now
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for _, action := range check.Limit.Actions {
-				switch strings.ToLower(action) {
-				case "restart":
-					if viper.GetBool("dry-run") {
-						log.Debugf("dry-run mode active, server %s restart", serverCfg.Name)
-					} else {
-						log.Infof("need to restart server %s", serverCfg.Name)
-						if err := server.SendCommand(serverCfg.Name, []string{"say", "SRCDS CHECKER RESTART MARKER"}); err != nil {
-							log.Error(err)
-						}
-						if err := server.Restart(serverCfg.Name); err != nil {
-							log.Error(err)
-						}
-						log.Infof("server %s restarted", serverCfg.Name)
-					}
-				}
-			}
-		}()
+		r.runAction(check, serverCfg)
 	} else {
 		log.Debugf("nothing to do for server %s", serverCfg.Name)
 	}
+}
+
+func (r *ResultServerList) runAction(check config.Check, serverCfg *config.Server) {
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for _, action := range check.Limit.Actions {
+			switch strings.ToLower(action) {
+			case "restart":
+				if viper.GetBool("dry-run") {
+					log.Debugf("dry-run mode active, server %s restart", serverCfg.Name)
+				} else {
+					log.Infof("need to restart server %s", serverCfg.Name)
+					if err := server.SendCommand(serverCfg.Name, []string{"say", "SRCDS CHECKER RESTART MARKER"}); err != nil {
+						log.Error(err)
+					}
+					if err := server.Restart(serverCfg.Name); err != nil {
+						log.Error(err)
+					}
+					log.Infof("server %s restarted", serverCfg.Name)
+				}
+			}
+		}
+	}()
+
 	wg.Wait()
 	return
 }

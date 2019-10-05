@@ -48,6 +48,19 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 		CheckForDockerEvents(stopCh)
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case result := <-resultCh:
+				resultCounter.Add(result)
+			case <-stopCh:
+				return
+			}
+		}
+	}()
+
 	for _, server := range config.Cfg.Servers {
 		wg.Add(1)
 		go func(server *config.Server, stopCh <-chan struct{}) {
@@ -79,19 +92,6 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 			}
 		}(server, stopCh)
 	}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case result := <-resultCh:
-				resultCounter.Add(result)
-			case <-stopCh:
-				return
-			}
-		}
-	}()
 
 	log.Infof("waiting for signal")
 

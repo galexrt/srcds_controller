@@ -29,7 +29,6 @@ import (
 
 	// Import RCON check
 
-	rcon "github.com/galexrt/go-rcon"
 	"github.com/galexrt/srcds_controller/pkg/checker"
 	_ "github.com/galexrt/srcds_controller/pkg/checks/rcon"
 	"github.com/galexrt/srcds_controller/pkg/server"
@@ -47,7 +46,7 @@ var checkerCmd = &cobra.Command{
 			return err
 		}
 		log.SetLevel(level)
-		rcon.SetLog(log.WithField("pkg", "go-rcon").Logger)
+		//rcon.SetLog(log.WithField("pkg", "go-rcon").Logger)
 
 		stopCh := make(chan struct{})
 		sigCh := make(chan os.Signal)
