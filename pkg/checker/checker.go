@@ -95,9 +95,7 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 
 	log.Infof("waiting for signal")
 
-	select {
-	case <-stopCh:
-	}
+	<-stopCh
 	log.Info("signal received, waiting on waitgroup ...")
 	wg.Wait()
 	log.Info("waitgroup successfully synced")

@@ -76,7 +76,7 @@ func List() error {
 }
 
 func Start(serverName string) error {
-	log.Infof("starting server %s ...\n", serverName)
+	log.Infof("starting server %s ...", serverName)
 
 	if _, serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
 		return fmt.Errorf("no server config found for %s", serverName)
