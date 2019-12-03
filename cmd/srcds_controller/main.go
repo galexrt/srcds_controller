@@ -68,7 +68,8 @@ func initConfig() {
 		// Get current work
 		home, err := homedir.Dir()
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
+			os.Exit(2)
 		}
 		cfgFile = path.Join(home, ".srcds_controller.yaml")
 	}
@@ -79,15 +80,19 @@ func initConfig() {
 	if _, err := os.Stat(cfgFile); err == nil {
 		out, err := ioutil.ReadFile(cfgFile)
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
+			os.Exit(2)
 		}
 		if err = yaml.Unmarshal(out, config.Cfg); err != nil {
-			log.Fatal(err)
+			log.Error(err)
+			os.Exit(2)
 		}
 		if err = config.Cfg.Verify(); err != nil {
-			log.Fatal(err)
+			log.Error(err)
+			os.Exit(2)
 		}
 	} else {
-		log.Fatal("no config found in home dir nor specified by flag")
+		log.Error("no config found in home dir nor specified by flag")
+		os.Exit(2)
 	}
 }

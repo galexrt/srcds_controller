@@ -41,6 +41,7 @@ var checkerCmd = &cobra.Command{
 	Hidden:            true,
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Infof("log level set to %s", viper.GetString("log-level"))
 		level, err := log.ParseLevel(viper.GetString("log-level"))
 		if err != nil {
 			return err
