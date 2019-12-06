@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	resultCounter = ResultServerList{}
+	resultCounter = NewResultServerList()
 )
 
 type Checker struct {
