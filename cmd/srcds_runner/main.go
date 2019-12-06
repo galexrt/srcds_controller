@@ -52,6 +52,8 @@ var (
 )
 
 func main() {
+	_ = syscall.Umask(7)
+
 	loggerProd, _ := zap.NewDevelopment()
 	defer loggerProd.Sync()
 	logger = loggerProd.Sugar()

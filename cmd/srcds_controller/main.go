@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"syscall"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	homedir "github.com/mitchellh/go-homedir"
@@ -39,6 +40,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
+	_ = syscall.Umask(7)
 	Execute()
 }
 

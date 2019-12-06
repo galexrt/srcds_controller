@@ -32,6 +32,7 @@ var FilePath string
 
 // Config config file struct
 type Config struct {
+	General General              `yaml:"general`
 	Docker  Docker               `yaml:"docker"`
 	Servers Servers              `yaml:"servers"`
 	Checker Checker              `yaml:"checker"`
@@ -51,4 +52,9 @@ func (c *Config) Verify() error {
 		}
 	}
 	return nil
+}
+
+// General general config options
+type General struct {
+	Umask string `yaml:"umask"`
 }
