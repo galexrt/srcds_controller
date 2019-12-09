@@ -31,6 +31,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var lastAction = map[string]time.Time{}
+
 func CheckForDockerEvents(stopCh <-chan struct{}) {
 	filterArgs := filters.NewArgs()
 	filterArgs.Add("app", "gameserver")
@@ -48,6 +50,7 @@ func CheckForDockerEvents(stopCh <-chan struct{}) {
 		case <-stopCh:
 			return
 		case event := <-eventStream:
+			log.Debug("received docker event")
 			if _, ok := event.Actor.Attributes["name"]; ok {
 				event.Actor.Attributes["name"] = strings.TrimPrefix(event.Actor.Attributes["name"], config.Cfg.Docker.NamePrefix)
 				if err := handleDockerEvent(event); err != nil {
@@ -59,7 +62,7 @@ func CheckForDockerEvents(stopCh <-chan struct{}) {
 			}
 		case err := <-errChan:
 			if err != nil {
-				log.Error(err)
+				log.WithError(err).Error("received error from docker events stream")
 				return
 			}
 		}
@@ -67,23 +70,25 @@ func CheckForDockerEvents(stopCh <-chan struct{}) {
 }
 
 func handleDockerEvent(event events.Message) error {
-	switch strings.ToLower(event.Action) {
+	// TODO log action in lastAction map
+	eventAction := strings.ToLower(event.Action)
+	switch eventAction {
 	case "die":
 		if _, ok := event.Actor.Attributes["name"]; !ok {
-			return fmt.Errorf("given event has no container name in it")
+			return fmt.Errorf("docker event has no container name in it")
 		}
 		serverName := event.Actor.Attributes["name"]
 
 		if viper.GetBool("dry-run") {
-			log.Debug("dry-run mode active, server restart")
+			log.WithField("server", serverName).Info("dry-run mode active, server restart")
 		} else {
-			time.Sleep(7 * time.Second)
+			log.WithField("server", serverName).Info("Restarting server")
 			if err := server.Restart(serverName); err != nil {
 				return err
 			}
 		}
 	default:
-		log.Debugf("docker event that isn't of our concern (not 'die')")
+		log.WithField("event_action", eventAction).Debugf("docker event isn't of our concern (not of type 'die')")
 	}
 	return nil
 }
