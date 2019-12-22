@@ -23,6 +23,7 @@ import (
 
 	"github.com/galexrt/srcds_controller/pkg/checks"
 	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
@@ -62,17 +63,17 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 		}
 	}()
 
-	for _, server := range config.Cfg.Servers {
+	for _, server := range userconfig.Cfg.Servers {
 		wg.Add(1)
-		go func(server *config.Server, stopCh <-chan struct{}) {
+		go func(server *config.Config, stopCh <-chan struct{}) {
 			defer wg.Done()
-			for _, check := range server.Checks {
+			for _, check := range server.Server.Checks {
 				log.WithFields(logrus.Fields{
-					"server": server.Name,
+					"server": server.Server.Name,
 					"check":  check.Name,
 				}).Info("starting check")
 				wg.Add(1)
-				go func(check config.Check, server *config.Server) {
+				go func(check config.Check, server *config.Config) {
 					defer wg.Done()
 					for {
 						log.Debugf("running check %s", check.Name)

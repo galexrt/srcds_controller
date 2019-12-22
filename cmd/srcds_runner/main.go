@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -40,7 +41,9 @@ import (
 
 const (
 	// ListenAddress server listen address
-	ListenAddress = "unix:///socket/socket.sock"
+	ListenAddress = ".srcds_runner.sock"
+	// ConfigFileName name of the config file for a server
+	ConfigFileName = ".srcds_controller_server.yaml"
 )
 
 var (
@@ -49,8 +52,6 @@ var (
 	tty          *os.File
 	out          io.Reader
 	consoleMutex sync.Mutex
-
-	serverName string
 )
 
 func main() {
@@ -62,21 +63,10 @@ func main() {
 	defer loggerProd.Sync()
 	logger = loggerProd.Sugar()
 
-	serverName = os.Getenv("SRCDS_CONTROLLER_SERVER_NAME")
-	if serverName == "" {
-		logger.Fatal("no server name given from env var")
-	}
-
 	config.Cfg = &config.Config{}
 	loadConfig()
 	if err := config.Cfg.Verify(); err != nil {
 		logger.Fatal(err)
-	}
-
-	// Check if server config exists
-	serverCfg := config.Cfg.Servers.GetByName(serverName)
-	if serverCfg == nil {
-		logger.Fatalf("server %s not found in config file", serverName)
 	}
 
 	syscall.Umask(config.Cfg.General.Umask)
@@ -115,16 +105,11 @@ func main() {
 	r.GET("/", cmdExecute)
 	r.POST("/", cmdExecute)
 
-	go func() {
-		if err := r.Run(ListenAddress); err != nil {
-			logger.Fatal(err)
-			return
-		}
-	}()
+	go listenAndServe(r)
 
 	cmd := exec.CommandContext(ctx, os.Args[1], args...)
 	cmd.Env = os.Environ()
-	tty, err := pty.Start(cmd)
+	tty, err = pty.Start(cmd)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -167,15 +152,12 @@ func main() {
 
 		if tty != nil {
 			config.Cfg.Lock()
-			serverCfg := config.Cfg.Servers.GetByName(serverName)
+			onExitCommand := config.Cfg.Server.OnExitCommand
 			config.Cfg.Unlock()
-			onExitCommand := serverCfg.OnExitCommand
 			if onExitCommand != "" {
 				logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
 
-				if _, err := tty.Write([]byte("\n\n" + onExitCommand + "\n")); err != nil {
-					//logger.Errorf("failed to write onExitCommand to server tty. %+v", err)
-				}
+				tty.Write([]byte("\n\n" + onExitCommand + "\n"))
 				time.Sleep(5 * time.Second)
 			}
 		}
@@ -183,9 +165,7 @@ func main() {
 		time.Sleep(500 * time.Millisecond)
 
 		if cmd.Process != nil {
-			if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-				//logger.Errorf("failed to send SIGTERM signal to server process. %+v", err)
-			}
+			cmd.Process.Signal(syscall.SIGTERM)
 		}
 
 		cancel()
@@ -196,6 +176,16 @@ func main() {
 }
 
 func cmdExecute(c *gin.Context) {
+	ok, err := checkACL(c.Request)
+	if err != nil {
+		c.String(http.StatusForbidden, "failed to check ACL")
+		return
+	}
+	if !ok {
+		c.String(http.StatusForbidden, "You don't have access to this server")
+		return
+	}
+
 	var command string
 	if c.PostForm("command") != "" {
 		command = c.PostForm("command")
@@ -231,18 +221,16 @@ func copyLogs(r io.Reader) error {
 			)
 		}
 		if err == io.EOF {
-			//logger.Info("copyLogs: received EOF from given log source")
 			return nil
 		}
 		if err != nil {
-			//logger.Error(err)
 			return err
 		}
 	}
 }
 
 func loadConfig() error {
-	out, err := ioutil.ReadFile("/config/config.yaml")
+	out, err := ioutil.ReadFile(ConfigFileName)
 	if err != nil {
 		return err
 	}
@@ -259,20 +247,21 @@ func reconciliation(stopCh chan struct{}) {
 	for {
 		if err := loadConfig(); err != nil {
 			logger.Fatal(err)
-			return
 		}
 		config.Cfg.Lock()
-		serverCfg := config.Cfg.Servers.GetByName(serverName)
+		serverCfg := config.Cfg.Server
 		config.Cfg.Unlock()
 		if serverCfg == nil {
-			logger.Errorf("no config for server %s found in config file", serverName)
+			logger.Error("no / empty config found for server")
 		} else {
 			consoleMutex.Lock()
-			if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", serverCfg.RCON.Password))); err != nil {
-				consoleMutex.Unlock()
-				logger.Errorf("failed to write rcon_password command to server console. %+v", err)
-			}
-			consoleMutex.Unlock()
+			func() {
+				defer consoleMutex.Unlock()
+				if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", serverCfg.RCON.Password))); err != nil {
+					logger.Errorf("failed to write rcon_password command to server console. %+v", err)
+				}
+			}()
+
 		}
 		select {
 		case <-time.After(5 * time.Minute):
@@ -280,4 +269,22 @@ func reconciliation(stopCh chan struct{}) {
 			return
 		}
 	}
+}
+
+func listenAndServe(r *gin.Engine) {
+	// Make sure no stale sockets present
+	os.Remove(ListenAddress)
+
+	http.HandleFunc("/", r.ServeHTTP)
+
+	l, err := NewUnixListener(ListenAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(ListenAddress)
+
+	server := http.Server{
+		ConnState: ConnStateEvent,
+	}
+	server.Serve(NewConnSaveListener(l))
 }

@@ -26,6 +26,6 @@ func init() {
 }
 
 // Run run a dummy check on a config.Server
-func Run(check config.Check, server *config.Server) bool {
+func Run(check config.Check, server *config.Config) bool {
 	return false
 }

@@ -21,33 +21,30 @@ import (
 	"strings"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func checkServers(cmd *cobra.Command, args []string) ([]string, error) {
-	var servers []string
+func checkServers(cmd *cobra.Command, args []string) ([]*config.Config, error) {
+	var servers []*config.Config
 	if viper.GetBool(AllServers) || (len(args) > 0 && strings.ToLower(args[0]) == AllServers) {
-		for _, srv := range config.Cfg.Servers {
-			servers = append(servers, srv.Name)
+		for _, server := range userconfig.Cfg.Servers {
+			servers = append(servers, server)
 		}
 	} else if len(args) > 0 {
-		servers = strings.Split(args[0], ",")
+		for _, server := range strings.Split(args[0], ",") {
+			cfg, ok := userconfig.Cfg.Servers[server]
+			if !ok {
+				return servers, fmt.Errorf("servers %s not found", server)
+			}
+			servers = append(servers, cfg)
+		}
 	}
 
 	if len(servers) == 0 {
 		return servers, fmt.Errorf("no server(s) given, please provide a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
 	}
 
-	for _, server := range servers {
-		serverCfg := config.Cfg.Servers.GetByName(server)
-		if serverCfg == nil {
-			return servers, fmt.Errorf("server %s not found in config", server)
-		}
-		if !serverCfg.Enabled {
-			log.Warningf("server %s is not enabled, skipping ...", server)
-		}
-	}
 	return servers, nil
 }

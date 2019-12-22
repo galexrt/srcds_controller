@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -32,15 +31,11 @@ var (
 )
 
 // GetServerContainer return container for given server name
-func GetServerContainer(serverName string) (types.ContainerJSON, error) {
+func GetServerContainer(serverCfg *config.Config) (types.ContainerJSON, error) {
 	var err error
 	var cont types.ContainerJSON
 
-	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return cont, fmt.Errorf("no server config found for %s", serverName)
-	}
-
-	cont, err = DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err = DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 	if err != nil {
 		return cont, err
 	}

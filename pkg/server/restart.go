@@ -17,18 +17,20 @@ limitations under the License.
 package server
 
 import (
+	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/spf13/viper"
 )
 
 // Restart restart a server (optionally remove the server container after stop)
-func Restart(serverName string) error {
-	if err := Stop(serverName); err != nil {
+func Restart(serverCfg *config.Config) error {
+	if err := Stop(serverCfg); err != nil {
 		return err
 	}
 	if viper.GetBool("remove") {
-		if err := Remove(serverName); err != nil {
+		if err := Remove(serverCfg); err != nil {
 			return err
 		}
 	}
-	return Start(serverName)
+
+	return Start(serverCfg)
 }

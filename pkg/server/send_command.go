@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
@@ -29,23 +30,17 @@ import (
 )
 
 // SendCommand sends a command to a server
-func SendCommand(serverName string, args []string) error {
-	log.Infof("sending command '%s' to server %s ...\n", strings.Join(args, " "), serverName)
+func SendCommand(serverCfg *config.Config, args []string) error {
+	log.Infof("sending command '%s' to server %s ...\n", strings.Join(args, " "), serverCfg.Server.Name)
 
-	serverCfg := config.Cfg.Servers.GetByName(serverName)
-	if serverCfg == nil {
-		return fmt.Errorf("no server config found for %s", serverName)
-	}
-
-	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/", serverCfg.RunnerPort), url.Values{
-		"auth-key": {""},
-		"command":  {strings.Join(args, " ")},
+	resp, err := http.PostForm(fmt.Sprintf("unix://%s", path.Join(serverCfg.Server.Path, ".srcds_runner.sock")), url.Values{
+		"command": {strings.Join(args, " ")},
 	})
 	if err != nil {
-		return fmt.Errorf("error during command exec send to server %s. %+v", serverName, err)
+		return fmt.Errorf("error during command exec send to server %s. %+v", serverCfg.Server.Name, err)
 	}
 	if resp.StatusCode == http.StatusOK {
-		log.Infof("successfully sent command to server %s.\n", serverName)
+		log.Infof("successfully sent command to server %s.\n", serverCfg.Server.Name)
 		return nil
 	}
 
@@ -55,5 +50,5 @@ func SendCommand(serverName string, args []string) error {
 		return errors.Wrap(err, "failed to read body from send command response")
 	}
 
-	return fmt.Errorf("error during sending of command to srcds_runner for server %s", serverName)
+	return fmt.Errorf("error during sending of command to srcds_runner for server %s", serverCfg.Server.Name)
 }

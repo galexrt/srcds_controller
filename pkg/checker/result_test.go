@@ -27,8 +27,10 @@ func TestAdd(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	r := NewResultServerList()
 	result1 := Result{
-		Server: &config.Server{
-			Name: "server1",
+		Server: &config.Config{
+			Server: &config.Server{
+				Name: "server1",
+			},
 		},
 		Check: config.Check{
 			Name: "dummy",
@@ -41,8 +43,10 @@ func TestAdd(t *testing.T) {
 		},
 	}
 	result2 := Result{
-		Server: &config.Server{
-			Name: "server2",
+		Server: &config.Config{
+			Server: &config.Server{
+				Name: "server2",
+			},
 		},
 		Check: config.Check{
 			Name: "dummy",

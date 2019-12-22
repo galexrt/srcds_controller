@@ -24,7 +24,6 @@ import (
 	"path"
 
 	"github.com/acarl005/stripansi"
-	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/kr/pty"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
@@ -49,15 +48,10 @@ var serverToolsUpdate = &cobra.Command{
 		}
 
 		errorOccured := false
-		for _, serverName := range servers {
-			serverCfg := config.Cfg.Servers.GetByName(serverName)
-			if serverCfg == nil {
-				return fmt.Errorf("no server config found for %s", serverName)
-			}
-
+		for _, serverCfg := range servers {
 			commandArgs := []string{
 				"+login anonymous",
-				fmt.Sprintf("+force_install_dir %s", serverCfg.Path),
+				fmt.Sprintf("+force_install_dir %s", serverCfg.Server.Path),
 				"+app_update 4020", "validate",
 				"+quit",
 			}

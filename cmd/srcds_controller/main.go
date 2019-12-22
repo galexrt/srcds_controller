@@ -77,7 +77,6 @@ func initConfig() {
 	}
 
 	config.Cfg = &config.Config{}
-	config.FilePath = cfgFile
 
 	if _, err := os.Stat(cfgFile); err == nil {
 		out, err := ioutil.ReadFile(cfgFile)

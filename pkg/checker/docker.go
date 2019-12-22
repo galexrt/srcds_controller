@@ -27,6 +27,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -78,12 +79,16 @@ func handleDockerEvent(event events.Message) error {
 			return fmt.Errorf("docker event has no container name in it")
 		}
 		serverName := event.Actor.Attributes["name"]
+		serverCfg, ok := userconfig.Cfg.Servers[serverName]
+		if !ok {
+			return fmt.Errorf("unable to find server config for ")
+		}
 
 		if viper.GetBool("dry-run") {
 			log.WithField("server", serverName).Info("dry-run mode active, server restart")
 		} else {
 			log.WithField("server", serverName).Info("Restarting server")
-			if err := server.Restart(serverName); err != nil {
+			if err := server.Restart(serverCfg); err != nil {
 				return err
 			}
 		}

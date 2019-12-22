@@ -20,4 +20,4 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/config"
 )
 
-var Checks = map[string]func(check config.Check, server *config.Server) bool{}
+var Checks = map[string]func(check config.Check, server *config.Config) bool{}

@@ -35,30 +35,22 @@ import (
 )
 
 // Start starts a server
-func Start(serverName string) error {
-	log.Infof("starting server %s ...", serverName)
+func Start(serverCfg *config.Config) error {
+	log.Infof("starting server %s ...")
 
-	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return fmt.Errorf("no server config found for %s", serverName)
-	}
-
-	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 	if err != nil && !client.IsErrNotFound(err) {
 		return err
 	} else if err == nil && (cont.State.Status != "created" && cont.State.Status != "exited") {
-		return fmt.Errorf("server %s container is already existing / running", serverName)
+		return fmt.Errorf("server %s container is already existing / running", serverCfg.Server.Name)
 	}
 
 	var containerID string
 	if cont.ContainerJSONBase != nil && (cont.State.Status == "created" || cont.State.Status == "exited") {
 		containerID = cont.ID
 	} else {
-		serverCfg := config.Cfg.Servers.GetByName(serverName)
-		if serverCfg == nil {
-			return fmt.Errorf("no server config found for %s", serverName)
-		}
-		serverDir := serverCfg.Path
-		mountDir := serverCfg.MountsDir
+		serverDir := serverCfg.Server.Path
+		mountDir := serverCfg.Server.MountsDir
 
 		var hostname string
 		hostname, err = os.Hostname()
@@ -69,11 +61,11 @@ func Start(serverName string) error {
 		contArgs := strslice.StrSlice{
 			"./srcds_run",
 			"-port",
-			strconv.Itoa(serverCfg.Port),
+			strconv.Itoa(serverCfg.Server.Port),
 		}
 
-		for _, arg := range serverCfg.Flags {
-			arg = strings.Replace(arg, "%RCON_PASSWORD%", serverCfg.RCON.Password, -1)
+		for _, arg := range serverCfg.Server.Flags {
+			arg = strings.Replace(arg, "%RCON_PASSWORD%", serverCfg.Server.RCON.Password, -1)
 			contArgs = append(contArgs, arg)
 		}
 
@@ -82,15 +74,13 @@ func Start(serverName string) error {
 				"app":        "gameserver",
 				"managed-by": "srcds_controller",
 			},
-			Env: []string{
-				fmt.Sprintf("SRCDS_CONTROLLER_SERVER_NAME=%s", serverCfg.Name),
-			},
+			Env:         []string{},
 			Cmd:         contArgs,
 			AttachStdin: true,
 			Tty:         false,
 			OpenStdin:   true,
 			Hostname:    hostname,
-			User:        fmt.Sprintf("%d:%d", serverCfg.RunOptions.UID, serverCfg.RunOptions.GID),
+			User:        fmt.Sprintf("%d:%d", serverCfg.Server.RunOptions.UID, serverCfg.Server.RunOptions.GID),
 			Image:       config.Cfg.Docker.Image,
 			WorkingDir:  serverDir,
 		}
@@ -123,18 +113,7 @@ func Start(serverName string) error {
 					Target:   "/etc/group",
 					ReadOnly: true,
 				},
-				{
-					Type:     mount.TypeBind,
-					Source:   config.FilePath,
-					Target:   "/config/config.yaml",
-					ReadOnly: true,
-				},
-				{
-					Type:     mount.TypeBind,
-					Source:   config.FilePath,
-					Target:   "/socket/socket.sock",
-					ReadOnly: false,
-				},
+				// Server directory
 				{
 					Type:     mount.TypeBind,
 					Source:   serverDir,
@@ -151,13 +130,13 @@ func Start(serverName string) error {
 				Target: mountDir,
 			})
 		}
-		if serverCfg.Resources != nil {
-			contHostCfg.Resources = *serverCfg.Resources
+		if serverCfg.Server.Resources != nil {
+			contHostCfg.Resources = *serverCfg.Server.Resources
 		}
 
 		netCfg := &network.NetworkingConfig{}
 		var resp container.ContainerCreateCreatedBody
-		resp, err = DockerCli.ContainerCreate(context.Background(), contCfg, contHostCfg, netCfg, util.GetContainerName(serverName))
+		resp, err = DockerCli.ContainerCreate(context.Background(), contCfg, contHostCfg, netCfg, util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 		if err != nil {
 			return err
 		}
@@ -172,7 +151,7 @@ func Start(serverName string) error {
 		return err
 	}
 
-	log.Infof("started server %s.", serverName)
+	log.Infof("started server %s", serverCfg.Server.Name)
 
 	return nil
 }

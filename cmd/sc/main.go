@@ -24,6 +24,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -80,24 +81,27 @@ func initConfig() {
 		}
 		cfgFile = path.Join(home, ".srcds_controller.yaml")
 	}
-
-	config.Cfg = &config.Config{}
-	config.FilePath = cfgFile
+	userCfg := &userconfig.UserConfig{}
+	cfgs := &userconfig.Config{
+		Servers: map[string]*config.Config{},
+	}
 
 	if _, err := os.Stat(cfgFile); err == nil {
 		out, err := ioutil.ReadFile(cfgFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err = yaml.Unmarshal(out, config.Cfg); err != nil {
+		if err = yaml.Unmarshal(out, userCfg); err != nil {
 			log.Fatal(err)
 		}
-		if err = config.Cfg.Verify(); err != nil {
+		if err = userCfg.Load(cfgs); err != nil {
 			log.Fatal(err)
 		}
 	} else {
 		log.Fatal("no config found in home dir nor specified by flag")
 	}
+
+	userconfig.Cfg = cfgs
 }
 
 func init() {

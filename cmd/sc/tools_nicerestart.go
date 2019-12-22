@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -50,15 +51,15 @@ var serverToolsNiceRestart = &cobra.Command{
 
 		sendCommandInParallel := func(command string) {
 			wg := sync.WaitGroup{}
-			for _, serverName := range servers {
+			for _, serverCfg := range servers {
 				wg.Add(1)
-				go func(serverName string) {
+				go func(cfg *config.Config) {
 					defer wg.Done()
-					if err := server.SendCommand(serverName, []string{command}); err != nil {
+					if err := server.SendCommand(cfg, []string{command}); err != nil {
 						log.Errorf("%+v", err)
 						errorOccured = true
 					}
-				}(serverName)
+				}(serverCfg)
 			}
 			wg.Wait()
 		}
@@ -96,22 +97,22 @@ var serverToolsNiceRestart = &cobra.Command{
 		for {
 			if secsRemaining <= 0 {
 				wg := sync.WaitGroup{}
-				for _, serverName := range servers {
+				for _, serverCfg := range servers {
 					wg.Add(1)
-					go func(serverName string) {
+					go func(cfg *config.Config) {
 						defer wg.Done()
-						if err := server.Stop(serverName); err != nil {
+						if err := server.Stop(cfg); err != nil {
 							log.Errorf("%+v", err)
 							errorOccured = true
 						}
 						if !viper.GetBool("stop-only") {
 							time.Sleep(500 * time.Millisecond)
-							if err := server.Start(serverName); err != nil {
+							if err := server.Start(cfg); err != nil {
 								log.Errorf("%+v", err)
 								errorOccured = true
 							}
 						}
-					}(serverName)
+					}(serverCfg)
 				}
 				wg.Wait()
 				break timeLoop

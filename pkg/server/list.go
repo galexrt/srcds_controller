@@ -20,21 +20,20 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"text/tabwriter"
 
 	"github.com/docker/docker/client"
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	"github.com/galexrt/srcds_controller/pkg/util"
 )
 
 // List list the servers from the config
 func List() error {
 	w := tabwriter.NewWriter(os.Stdout, 1, 0, 1, ' ', tabwriter.Debug)
-	fmt.Fprintln(w, "Name\tPort\tContainer Status")
-	for _, serverCfg := range config.Cfg.Servers {
-		serverName := util.GetContainerName(serverCfg.Name)
-		cont, err := DockerCli.ContainerInspect(context.Background(), serverName)
+	fmt.Fprintln(w, "Name\tPort\tStatus\tPath")
+	for _, serverCfg := range userconfig.Cfg.Servers {
+		containerName := util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name)
+		cont, err := DockerCli.ContainerInspect(context.Background(), containerName)
 		status := "Not Running"
 		if err != nil {
 			if !client.IsErrNotFound(err) {
@@ -44,7 +43,7 @@ func List() error {
 		if cont.ContainerJSONBase != nil {
 			status = cont.State.Status
 		}
-		fmt.Fprintf(w, "%s\t%d\t%s\n", strings.TrimPrefix(serverName, config.Cfg.Docker.NamePrefix), serverCfg.Port, status)
+		fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", serverCfg.Server.Name, serverCfg.Server.Port, status, serverCfg.Server.Path)
 	}
 	return w.Flush()
 }

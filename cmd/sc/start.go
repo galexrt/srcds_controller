@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -38,15 +39,15 @@ var serverStartCmd = &cobra.Command{
 
 		errorOccured := false
 		wg := sync.WaitGroup{}
-		for _, serverName := range servers {
+		for _, serverCfg := range servers {
 			wg.Add(1)
-			go func(serverName string) {
+			go func(cfg *config.Config) {
 				defer wg.Done()
-				if err := server.Start(serverName); err != nil {
+				if err := server.Start(cfg); err != nil {
 					log.Errorf("%+v", err)
 					errorOccured = true
 				}
-			}(serverName)
+			}(serverCfg)
 		}
 		wg.Wait()
 		if errorOccured {

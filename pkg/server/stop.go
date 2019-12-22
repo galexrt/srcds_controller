@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
@@ -28,14 +27,10 @@ import (
 )
 
 // Stop stops a server
-func Stop(serverName string) error {
-	log.Infof("stopping server %s ...", serverName)
+func Stop(serverCfg *config.Config) error {
+	log.Infof("stopping server %s ...", serverCfg.Server.Name)
 
-	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return fmt.Errorf("no server config found for %s", serverName)
-	}
-
-	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 	if err != nil {
 		if client.IsErrNotFound(err) {
 			return nil
@@ -43,15 +38,13 @@ func Stop(serverName string) error {
 		return err
 	}
 
-	containerID := cont.ID
-
 	if cont.State.Running {
 		duration := viper.GetDuration("timeout")
-		if err = DockerCli.ContainerStop(context.Background(), containerID, &duration); err != nil {
+		if err = DockerCli.ContainerStop(context.Background(), cont.ID, &duration); err != nil {
 			return err
 		}
 	}
 
-	log.Infof("stopped server %s.", serverName)
+	log.Infof("stopped server %s (container: %s)", serverCfg.Server.Name, cont.ID)
 	return nil
 }

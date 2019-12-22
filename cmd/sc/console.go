@@ -72,8 +72,8 @@ var serverConsoleCmd = &cobra.Command{
 				return
 			}
 			command := e.Text()
-			for _, serverName := range servers {
-				if err := server.SendCommand(serverName, []string{command}); err != nil {
+			for _, serverCfg := range servers {
+				if err := server.SendCommand(serverCfg, []string{command}); err != nil {
 					history.Append(tui.NewHBox(
 						tui.NewLabel("ERROR "),
 						tui.NewLabel(err.Error()),
@@ -127,8 +127,8 @@ var serverConsoleCmd = &cobra.Command{
 		outChan := make(chan string)
 		errors := make(chan error)
 
-		for _, serverName := range servers {
-			stdout, stderr, err := server.Logs(serverName, 0*time.Millisecond, 10, true)
+		for _, serverCfg := range servers {
+			stdout, stderr, err := server.Logs(serverCfg, 0*time.Millisecond, 10, true)
 			if err != nil {
 				ui.Quit()
 				return err
@@ -151,7 +151,7 @@ var serverConsoleCmd = &cobra.Command{
 					errors <- scanner.Err()
 					return
 				}
-			}(serverName)
+			}(serverCfg.Server.Name)
 			go func(serverName string) {
 				scanner := bufio.NewScanner(stderr)
 				for scanner.Scan() {
@@ -166,7 +166,7 @@ var serverConsoleCmd = &cobra.Command{
 					errors <- scanner.Err()
 					return
 				}
-			}(serverName)
+			}(serverCfg.Server.Name)
 		}
 
 		go func() {

@@ -32,20 +32,20 @@ func init() {
 }
 
 // Run run a rcon check on a config.Server
-func Run(check config.Check, server *config.Server) bool {
+func Run(check config.Check, server *config.Config) bool {
 	rconCfg := config.Cfg.Checks["rcon"]
 	if err := mergo.Map(&rconCfg, check.Opts); err != nil {
-		log.Fatalf("failed to merge checks config and checks opts from server %s", server.Name)
+		log.Fatalf("failed to merge checks config and checks opts from server %s", server.Server.Name)
 	}
 
-	log.Debugf("connecting to server %s using RCON", server.Name)
-	port := strconv.Itoa(server.Port)
-	con, err := rcon.Connect(net.JoinHostPort(server.Address, port), &rcon.ConnectOptions{
-		RCONPassword: server.RCON.Password,
+	log.Debugf("connecting to server %s using RCON", server.Server.Name)
+	port := strconv.Itoa(server.Server.Port)
+	con, err := rcon.Connect(net.JoinHostPort(server.Server.Address, port), &rcon.ConnectOptions{
+		RCONPassword: server.Server.RCON.Password,
 		Timeout:      rconCfg["timeout"],
 	})
 	if err != nil {
-		log.Errorf("error connecting to server %s using RCON. %+v", server.Name, err)
+		log.Errorf("error connecting to server %s using RCON. %+v", server.Server.Name, err)
 		return false
 	}
 	defer con.Close()

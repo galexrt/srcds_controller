@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/docker/docker/api/types"
 	"github.com/galexrt/srcds_controller/pkg/config"
@@ -27,14 +26,10 @@ import (
 )
 
 // Remove remove a server container
-func Remove(serverName string) error {
-	log.Infof("removing server container %s ...", serverName)
+func Remove(serverCfg *config.Config) error {
+	log.Infof("removing server container %s ...", serverCfg.Server.Name)
 
-	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return fmt.Errorf("no server config found for %s", serverName)
-	}
-
-	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 	if err != nil {
 		return err
 	}
@@ -43,6 +38,6 @@ func Remove(serverName string) error {
 		return err
 	}
 
-	log.Infof("removed server container %s.", serverName)
+	log.Infof("removed server container %s.", serverCfg.Server.Name)
 	return nil
 }

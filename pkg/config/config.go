@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"path/filepath"
 	"sync"
 
 	"github.com/coreos/pkg/capnslog"
@@ -28,15 +27,12 @@ var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "p
 // Cfg variable holding the global config object
 var Cfg *Config
 
-// FilePath path to config file
-var FilePath string
-
 // Config config file struct
 type Config struct {
 	sync.RWMutex
 	General *General             `yaml:"general"`
 	Docker  *Docker              `yaml:"docker"`
-	Servers Servers              `yaml:"servers"`
+	Server  *Server              `yaml:"server"`
 	Checker *Checker             `yaml:"checker"`
 	Checks  map[string]CheckOpts `yaml:"checks"`
 }
@@ -49,21 +45,10 @@ func (c *Config) Verify() error {
 		}
 	}
 
-	for k, server := range c.Servers {
-		cleanedPath, err := filepath.Abs(server.Path)
-		if err != nil {
-			return err
-		}
-		if cleanedPath != server.Path {
-			logger.Debugf("cleaned server %s path from %s to %s", server.Name, server.Path, cleanedPath)
-			c.Servers[k].Path = cleanedPath
-		}
-	}
 	return nil
 }
 
 // General general config options
 type General struct {
-	RunOptions RunOptions `yaml:"runOptions"`
-	Umask      int        `yaml:"umask"`
+	Umask int `yaml:"umask"`
 }

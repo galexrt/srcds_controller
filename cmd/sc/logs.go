@@ -43,8 +43,8 @@ var serverLogsCmd = &cobra.Command{
 		outChan := make(chan string)
 		doneCh := make(chan struct{})
 
-		for _, serverName := range servers {
-			stdin, stderr, err := server.Logs(serverName, viper.GetDuration("since"), viper.GetInt("tail"), viper.GetBool("follow"))
+		for _, serverCfg := range servers {
+			stdin, stderr, err := server.Logs(serverCfg, viper.GetDuration("since"), viper.GetInt("tail"), viper.GetBool("follow"))
 			if err != nil {
 				return err
 			}
@@ -67,7 +67,7 @@ var serverLogsCmd = &cobra.Command{
 					errors <- scanner.Err()
 					return
 				}
-			}(serverName)
+			}(serverCfg.Server.Name)
 			go func(serverName string) {
 				defer wg.Done()
 				scanner := bufio.NewScanner(stderr)
@@ -82,7 +82,7 @@ var serverLogsCmd = &cobra.Command{
 					errors <- scanner.Err()
 					return
 				}
-			}(serverName)
+			}(serverCfg.Server.Name)
 		}
 
 		go func() {

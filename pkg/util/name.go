@@ -18,11 +18,9 @@ package util
 
 import (
 	"fmt"
-
-	"github.com/galexrt/srcds_controller/pkg/config"
 )
 
 // GetContainerName return container name prefixed and everything.
-func GetContainerName(server string) string {
-	return fmt.Sprintf("%s%s", config.Cfg.Docker.NamePrefix, server)
+func GetContainerName(prefix string, server string) string {
+	return fmt.Sprintf("%s%s", prefix, server)
 }

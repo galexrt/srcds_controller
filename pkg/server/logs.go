@@ -29,14 +29,10 @@ import (
 )
 
 // Logs show / stream the logs of a server
-func Logs(serverName string, since time.Duration, tail int, follow bool) (io.ReadCloser, io.ReadCloser, error) {
-	log.Infof("showing logs of server %s ...\n", serverName)
+func Logs(serverCfg *config.Config, since time.Duration, tail int, follow bool) (io.ReadCloser, io.ReadCloser, error) {
+	log.Infof("showing logs of server %s ...\n", serverCfg.Server.Name)
 
-	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return nil, nil, fmt.Errorf("no server config found for %s", serverName)
-	}
-
-	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 	if err != nil {
 		return nil, nil, err
 	}

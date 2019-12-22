@@ -17,8 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"strings"
-
 	"github.com/docker/docker/api/types/container"
 )
 
@@ -31,23 +29,16 @@ type Server struct {
 	Enabled       bool                 `yaml:"enabled"`
 	Address       string               `yaml:"address"`
 	Port          int                  `yaml:"port"`
-	RunnerPort    int                  `yaml:"runnerPort"`
-	Path          string               `yaml:"path"`
 	MountsDir     string               `yaml:"mountsDir"`
 	Flags         []string             `yaml:"flags"`
-	RunOptions    RunOptions           `yaml:"runOptions"`
 	RCON          RCON                 `yaml:"rcon"`
 	Checks        []Check              `yaml:"checks"`
 	OnExitCommand string               `yaml:"onExitCommand"`
 	GameID        int64                `yaml:"gameID"`
 	Resources     *container.Resources `yaml:"resources,omitempty"`
-	ACL           ACL                  `yaml:"acl"`
-}
-
-// RunOptions run options such as user and group id to run the server as.
-type RunOptions struct {
-	UID int `yaml:"uid"`
-	GID int `yaml:"gid"`
+	RunOptions    RunOptions           `yaml:"runOptions"`
+	ACL           *ACL                 `yaml:"acl"`
+	Path          string
 }
 
 // RCON rcon info
@@ -55,19 +46,14 @@ type RCON struct {
 	Password string `yaml:"password"`
 }
 
-// GetByName return server from list by name
-func (s Servers) GetByName(name string) *Server {
-	name = strings.ToLower(name)
-	for _, server := range s {
-		if strings.ToLower(server.Name) == name {
-			return server
-		}
-	}
-	return nil
-}
-
 // ACL ACL info
 type ACL struct {
 	Users  []int `yaml:"users"`
 	Groups []int `yaml:"groups"`
+}
+
+// RunOptions run options such as user and group id to run the server as.
+type RunOptions struct {
+	UID int `yaml:"uid"`
+	GID int `yaml:"gid"`
 }
