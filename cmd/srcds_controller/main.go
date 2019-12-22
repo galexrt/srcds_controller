@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	_ = syscall.Umask(7)
+	syscall.Umask(7)
 	Execute()
 }
 
@@ -93,6 +93,8 @@ func initConfig() {
 			log.Error(err)
 			os.Exit(2)
 		}
+
+		syscall.Umask(config.Cfg.General.Umask)
 	} else {
 		log.Error("no config found in home dir nor specified by flag")
 		os.Exit(2)

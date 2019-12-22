@@ -19,31 +19,32 @@ package server
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+	"text/tabwriter"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/util"
 )
 
-var (
-	// DockerCli Docker client
-	DockerCli *client.Client
-)
-
-// GetServerContainer return container for given server name
-func GetServerContainer(serverName string) (types.ContainerJSON, error) {
-	var err error
-	var cont types.ContainerJSON
-
-	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return cont, fmt.Errorf("no server config found for %s", serverName)
+// List list the servers from the config
+func List() error {
+	w := tabwriter.NewWriter(os.Stdout, 1, 0, 1, ' ', tabwriter.Debug)
+	fmt.Fprintln(w, "Name\tPort\tContainer Status")
+	for _, serverCfg := range config.Cfg.Servers {
+		serverName := util.GetContainerName(serverCfg.Name)
+		cont, err := DockerCli.ContainerInspect(context.Background(), serverName)
+		status := "Not Running"
+		if err != nil {
+			if !client.IsErrNotFound(err) {
+				return err
+			}
+		}
+		if cont.ContainerJSONBase != nil {
+			status = cont.State.Status
+		}
+		fmt.Fprintf(w, "%s\t%d\t%s\n", strings.TrimPrefix(serverName, config.Cfg.Docker.NamePrefix), serverCfg.Port, status)
 	}
-
-	cont, err = DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
-	if err != nil {
-		return cont, err
-	}
-
-	return cont, nil
+	return w.Flush()
 }

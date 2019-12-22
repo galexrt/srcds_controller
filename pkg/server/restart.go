@@ -14,18 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package server
 
 import (
-	"math/rand"
+	"github.com/spf13/viper"
 )
 
-var letterRunes = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func RandString(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+// Restart restart a server (optionally remove the server container after stop)
+func Restart(serverName string) error {
+	if err := Stop(serverName); err != nil {
+		return err
 	}
-	return string(b)
+	if viper.GetBool("remove") {
+		if err := Remove(serverName); err != nil {
+			return err
+		}
+	}
+	return Start(serverName)
 }

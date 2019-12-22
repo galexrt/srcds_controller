@@ -1,6 +1,11 @@
+general:
+  runOptions:
+    #uid: 1001
+    #gid: 1001
+  umask: 7
 docker:
   image: galexrt/srcds_controller:runner-latest
-  namePrefix: "game"
+  namePrefix: "game-"
 servers:
   # name must be unique
   - name: YOUR_SERVER_NAME
@@ -11,9 +16,9 @@ servers:
     flags:
       - -console
       - -game garrysmod
-    runOptions:
-      #uid: 1001
-      #gid: 1001
+    #runOptions:
+    #  uid: 1001
+    #  gid: 1001
     onExitCommand: quit
     enabled: true
     rcon:

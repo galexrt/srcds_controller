@@ -21,11 +21,19 @@ import (
 	"os"
 	"path"
 
+	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/server"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
+)
+
+const (
+	// AllServers key to get all servers
+	AllServers = "all"
 )
 
 var (
@@ -90,4 +98,18 @@ func initConfig() {
 	} else {
 		log.Fatal("no config found in home dir nor specified by flag")
 	}
+}
+
+func init() {
+	rootCmd.PersistentFlags().BoolP(AllServers, "a", false, "If all servers should be used")
+	viper.BindPFlag(AllServers, rootCmd.PersistentFlags().Lookup(AllServers))
+}
+
+func initDockerCli(cmd *cobra.Command, args []string) error {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+	server.DockerCli = cli
+	return err
 }

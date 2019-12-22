@@ -18,6 +18,7 @@ package config
 
 import (
 	"path/filepath"
+	"sync"
 
 	"github.com/coreos/pkg/capnslog"
 )
@@ -32,15 +33,22 @@ var FilePath string
 
 // Config config file struct
 type Config struct {
-	General General              `yaml:"general`
-	Docker  Docker               `yaml:"docker"`
+	sync.RWMutex
+	General *General             `yaml:"general"`
+	Docker  *Docker              `yaml:"docker"`
 	Servers Servers              `yaml:"servers"`
-	Checker Checker              `yaml:"checker"`
+	Checker *Checker             `yaml:"checker"`
 	Checks  map[string]CheckOpts `yaml:"checks"`
 }
 
 // Verify verify the config file
 func (c *Config) Verify() error {
+	if c.General == nil {
+		c.General = &General{
+			Umask: 7,
+		}
+	}
+
 	for k, server := range c.Servers {
 		cleanedPath, err := filepath.Abs(server.Path)
 		if err != nil {
@@ -56,5 +64,6 @@ func (c *Config) Verify() error {
 
 // General general config options
 type General struct {
-	Umask string `yaml:"umask"`
+	RunOptions RunOptions `yaml:"runOptions"`
+	Umask      int        `yaml:"umask"`
 }

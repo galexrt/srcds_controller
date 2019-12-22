@@ -20,30 +20,38 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/util"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
-var (
-	// DockerCli Docker client
-	DockerCli *client.Client
-)
-
-// GetServerContainer return container for given server name
-func GetServerContainer(serverName string) (types.ContainerJSON, error) {
-	var err error
-	var cont types.ContainerJSON
+// Stop stops a server
+func Stop(serverName string) error {
+	log.Infof("stopping server %s ...", serverName)
 
 	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return cont, fmt.Errorf("no server config found for %s", serverName)
+		return fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	cont, err = DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil {
-		return cont, err
+		if client.IsErrNotFound(err) {
+			return nil
+		}
+		return err
 	}
 
-	return cont, nil
+	containerID := cont.ID
+
+	if cont.State.Running {
+		duration := viper.GetDuration("timeout")
+		if err = DockerCli.ContainerStop(context.Background(), containerID, &duration); err != nil {
+			return err
+		}
+	}
+
+	log.Infof("stopped server %s.", serverName)
+	return nil
 }

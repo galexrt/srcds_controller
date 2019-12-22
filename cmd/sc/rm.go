@@ -18,14 +18,11 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
-	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // serverRMCmd represents the rm command
@@ -35,22 +32,9 @@ var serverRMCmd = &cobra.Command{
 	Short:             "Remove one or more server containers",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var servers []string
-		if viper.GetBool(AllServers) || (len(args) > 0 && strings.ToLower(args[0]) == AllServers) {
-			for _, srv := range config.Cfg.Servers {
-				servers = append(servers, srv.Name)
-			}
-		} else if len(args) > 0 {
-			servers = strings.Split(args[0], ",")
-		}
-		if len(servers) == 0 {
-			return fmt.Errorf("no server(s) given, please put a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
-		}
-
-		for _, server := range servers {
-			if _, serverCfg := config.Cfg.Servers.GetByName(server); serverCfg == nil {
-				return fmt.Errorf("server %s not found in config", server)
-			}
+		servers, err := checkServers(cmd, args)
+		if err != nil {
+			return err
 		}
 
 		errorOccured := false

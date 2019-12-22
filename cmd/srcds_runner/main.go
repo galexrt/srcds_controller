@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -35,58 +34,58 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/gin-gonic/gin"
 	"github.com/kr/pty"
-	log "github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 )
 
+const (
+	// ListenAddress server listen address
+	ListenAddress = "unix:///socket/socket.sock"
+)
+
 var (
-	logger        *zap.SugaredLogger
-	tty           *os.File
-	out           io.Reader
-	mutx          sync.Mutex
-	onExitCommand string
-	chancloser    = &chcloser.ChannelCloser{}
-	envAuthKey    string
-	serverName    string
+	logger       *zap.SugaredLogger
+	chancloser   = &chcloser.ChannelCloser{}
+	tty          *os.File
+	out          io.Reader
+	consoleMutex sync.Mutex
+
+	serverName string
 )
 
 func main() {
-	_ = syscall.Umask(7)
-
-	loggerProd, _ := zap.NewDevelopment()
+	loggerProd, err := zap.NewDevelopment()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	defer loggerProd.Sync()
 	logger = loggerProd.Sugar()
 
-	serverName = os.Getenv("SRCDS_SERVER_NAME")
+	serverName = os.Getenv("SRCDS_CONTROLLER_SERVER_NAME")
 	if serverName == "" {
-		logger.Fatal("no server name given through env var")
-	}
-	envRunnerPort := os.Getenv("SRCDS_RUNNER_PORT")
-	if envRunnerPort == "" {
-		logger.Fatal("no runner port given through env var")
-	}
-	envAuthKey = os.Getenv("SRCDS_RUNNER_AUTH_KEY")
-	if envAuthKey == "" {
-		logger.Fatal("no runner auth key given through env var")
-	}
-	runnerPort, err := strconv.Atoi(envRunnerPort)
-	if err != nil {
-		logger.Fatal("runner port conversion from string to int failed")
+		logger.Fatal("no server name given from env var")
 	}
 
-	onExitCommand := os.Getenv("SRCDS_RUNNER_ONEXIT_COMMAND")
-	if onExitCommand == "" {
-		logger.Warn("no / empty onExitCommand given through env var")
+	config.Cfg = &config.Config{}
+	loadConfig()
+	if err := config.Cfg.Verify(); err != nil {
+		logger.Fatal(err)
 	}
+
+	// Check if server config exists
+	serverCfg := config.Cfg.Servers.GetByName(serverName)
+	if serverCfg == nil {
+		logger.Fatalf("server %s not found in config file", serverName)
+	}
+
+	syscall.Umask(config.Cfg.General.Umask)
 
 	if len(os.Args) <= 1 {
-		logger.Fatal("no args given")
+		logger.Fatal("no server args given")
 	}
 
-	listenAddress := fmt.Sprintf("127.0.0.1:%d", runnerPort)
-
-	logger.Infof("starting srcds_runner on %s with following args: %+v", listenAddress, os.Args[1:])
+	logger.Infof("starting srcds_runner on %s with following args: %+v", ListenAddress, os.Args[1:])
 
 	sigs := make(chan os.Signal, 1)
 	stopCh := make(chan struct{})
@@ -101,6 +100,7 @@ func main() {
 			cancel()
 		}
 	}()
+
 	args := []string{}
 	if len(os.Args) > 2 {
 		args = os.Args[2:]
@@ -114,11 +114,9 @@ func main() {
 
 	r.GET("/", cmdExecute)
 	r.POST("/", cmdExecute)
-	r.GET("/rconPwUpdate", rconPwUpdate)
-	r.POST("/rconPwUpdate", rconPwUpdate)
 
 	go func() {
-		if err = r.Run(listenAddress); err != nil {
+		if err := r.Run(ListenAddress); err != nil {
 			logger.Fatal(err)
 			return
 		}
@@ -126,7 +124,7 @@ func main() {
 
 	cmd := exec.CommandContext(ctx, os.Args[1], args...)
 	cmd.Env = os.Environ()
-	tty, err = pty.Start(cmd)
+	tty, err := pty.Start(cmd)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -134,28 +132,21 @@ func main() {
 		if tty == nil {
 			return
 		}
-		if err = tty.Close(); err != nil {
-			//logger.Error(err)
-			return
-		}
+		tty.Close()
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		logger.Info("beginning to stream logs")
+		logger.Info("beginning to stream logs from tty console")
 		copyLogs(tty)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err = cmd.Wait(); err != nil {
-			//logger.Errorf("error: %s\n", err)
-		}
-
+		cmd.Wait()
 		chancloser.Close(stopCh)
-		return
 	}()
 
 	wg.Add(1)
@@ -172,9 +163,13 @@ func main() {
 		case <-stopCh:
 		}
 
-		mutx.Lock()
+		consoleMutex.Lock()
 
 		if tty != nil {
+			config.Cfg.Lock()
+			serverCfg := config.Cfg.Servers.GetByName(serverName)
+			config.Cfg.Unlock()
+			onExitCommand := serverCfg.OnExitCommand
 			if onExitCommand != "" {
 				logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
 
@@ -201,20 +196,6 @@ func main() {
 }
 
 func cmdExecute(c *gin.Context) {
-	var authKey string
-	if c.PostForm("auth-key") != "" {
-		authKey = c.PostForm("auth-key")
-	} else if c.Query("auth-key") != "" {
-		authKey = c.Query("auth-key")
-	} else {
-		c.String(http.StatusBadRequest, "No auth key given.")
-		return
-	}
-	if authKey != envAuthKey {
-		c.String(http.StatusForbidden, "auth key not matching.")
-		return
-	}
-
 	var command string
 	if c.PostForm("command") != "" {
 		command = c.PostForm("command")
@@ -230,49 +211,11 @@ func cmdExecute(c *gin.Context) {
 		return
 	}
 
-	mutx.Lock()
+	consoleMutex.Lock()
+	defer consoleMutex.Unlock()
 	if _, err := tty.Write([]byte(command + "\n")); err != nil {
 		c.String(http.StatusConflict, "error during command writing to server")
 	}
-	mutx.Unlock()
-}
-
-func rconPwUpdate(c *gin.Context) {
-	var authKey string
-	if c.PostForm("auth-key") != "" {
-		authKey = c.PostForm("auth-key")
-	} else if c.Query("auth-key") != "" {
-		authKey = c.Query("auth-key")
-	} else {
-		c.String(http.StatusBadRequest, "No auth key given.")
-		return
-	}
-	if authKey != envAuthKey {
-		c.String(http.StatusForbidden, "auth key not matching.")
-		return
-	}
-
-	var password string
-	if c.PostForm("password") != "" {
-		password = c.PostForm("password")
-	} else if c.Query("password") == "" {
-		password = c.Query("password")
-	} else {
-		c.String(http.StatusBadRequest, "No password given.")
-		return
-	}
-
-	if tty == nil {
-		c.String(http.StatusInternalServerError, "cmd tty is nil")
-		return
-	}
-	mutx.Lock()
-	if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n", password))); err != nil {
-		mutx.Unlock()
-		c.String(http.StatusConflict, "error during command writing for rcon pw update to server")
-		return
-	}
-	mutx.Unlock()
 }
 
 func copyLogs(r io.Reader) error {
@@ -298,33 +241,38 @@ func copyLogs(r io.Reader) error {
 	}
 }
 
+func loadConfig() error {
+	out, err := ioutil.ReadFile("/config/config.yaml")
+	if err != nil {
+		return err
+	}
+	config.Cfg.Lock()
+	defer config.Cfg.Unlock()
+	if err := yaml.Unmarshal(out, config.Cfg); err != nil {
+		return err
+	}
+	return config.Cfg.Verify()
+}
+
 // reconciliation loop runs every 5 minutes to keep the RCON password in sync
 func reconciliation(stopCh chan struct{}) {
 	for {
-		config.Cfg = &config.Config{}
-
-		out, err := ioutil.ReadFile("/config/config.yaml")
-		if err != nil {
-			log.Fatal(err)
+		if err := loadConfig(); err != nil {
+			logger.Fatal(err)
+			return
 		}
-		if err = yaml.Unmarshal(out, config.Cfg); err != nil {
-			log.Fatal(err)
-		}
-		if err = config.Cfg.Verify(); err != nil {
-			log.Fatal(err)
-		}
-
-		_, serverCfg := config.Cfg.Servers.GetByName(serverName)
+		config.Cfg.Lock()
+		serverCfg := config.Cfg.Servers.GetByName(serverName)
+		config.Cfg.Unlock()
 		if serverCfg == nil {
-			log.Errorf("no config for server %s found in config file", serverName)
+			logger.Errorf("no config for server %s found in config file", serverName)
 		} else {
-			mutx.Lock()
+			consoleMutex.Lock()
 			if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", serverCfg.RCON.Password))); err != nil {
-				mutx.Unlock()
-				log.Errorf("error during command writing for rcon pw update to server")
-				return
+				consoleMutex.Unlock()
+				logger.Errorf("failed to write rcon_password command to server console. %+v", err)
 			}
-			mutx.Unlock()
+			consoleMutex.Unlock()
 		}
 		select {
 		case <-time.After(5 * time.Minute):

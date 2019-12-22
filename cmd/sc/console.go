@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/linehistory"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/marcusolsson/tui-go"
@@ -43,79 +42,17 @@ var serverConsoleCmd = &cobra.Command{
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.SetOutput(ioutil.Discard)
+
+		servers, err := checkServers(cmd, args)
+		if err != nil {
+			return err
+		}
+
 		var consoleError error
 
-		var servers []string
-		if viper.GetBool(AllServers) || (len(args) > 0 && strings.ToLower(args[0]) == AllServers) {
-			for _, srv := range config.Cfg.Servers {
-				servers = append(servers, srv.Name)
-			}
-		} else if len(args) > 0 {
-			servers = strings.Split(args[0], ",")
-		}
-		if len(servers) == 0 {
-			return fmt.Errorf("no server(s) given, please provide a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
-		}
-
-		for _, server := range servers {
-			if _, serverCfg := config.Cfg.Servers.GetByName(server); serverCfg == nil {
-				return fmt.Errorf("server %s not found in config", server)
-			}
-		}
-
-		historyStore := linehistory.NewHistory()
-
-		var histFile *os.File
-
-		if viper.GetBool("history") {
-			// Get current home dir
-			home, err := homedir.Dir()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			histFilePath := path.Join(home, ".srcds_controller_history")
-			histFile, err = os.OpenFile(histFilePath, os.O_RDONLY|os.O_CREATE, 0660)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			out, err := ioutil.ReadAll(histFile)
-			if err != nil {
-				histFile.Close()
-				log.Fatal(err)
-			}
-			histFile.Close()
-
-			parts := strings.Split(string(out), "\n")
-			partsLen := len(parts)
-
-			wantedHistoryLength := 51
-			if partsLen >= wantedHistoryLength {
-				histFile, err = os.OpenFile(histFilePath, os.O_WRONLY|os.O_TRUNC, 0660)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				parts = parts[partsLen-wantedHistoryLength:]
-				if _, err := histFile.WriteString(strings.Join(parts, "\n")); err != nil {
-					histFile.Close()
-					log.Fatal(err)
-				}
-				histFile.Close()
-			}
-			histFile, err = os.OpenFile(histFilePath, os.O_WRONLY|os.O_APPEND, 0660)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer histFile.Close()
-
-			for _, line := range parts {
-				if line == "" {
-					continue
-				}
-				historyStore.Add(line)
-			}
+		historyStore, histFile, err := history()
+		if err != nil {
+			return err
 		}
 
 		history := tui.NewVBox()
@@ -205,7 +142,6 @@ var serverConsoleCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stdout)
 				for scanner.Scan() {
 					msg := scanner.Text()
-					//outChan <- fmt.Sprintf("TEST : %#X : TEST", msg)
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
 					}
@@ -259,4 +195,58 @@ func init() {
 	viper.BindPFlag("history", serverConsoleCmd.PersistentFlags().Lookup("history"))
 
 	rootCmd.AddCommand(serverConsoleCmd)
+}
+
+func history() (*linehistory.History, *os.File, error) {
+	// Get current home dir
+	home, err := homedir.Dir()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	histFilePath := path.Join(home, ".srcds_controller_history")
+	histFile, err := os.OpenFile(histFilePath, os.O_RDONLY|os.O_CREATE, 0660)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	out, err := ioutil.ReadAll(histFile)
+	if err != nil {
+		histFile.Close()
+		return nil, nil, err
+	}
+	histFile.Close()
+
+	parts := strings.Split(string(out), "\n")
+	partsLen := len(parts)
+
+	wantedHistoryLength := 51
+	if partsLen >= wantedHistoryLength {
+		histFile, err = os.OpenFile(histFilePath, os.O_WRONLY|os.O_TRUNC, 0660)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		parts = parts[partsLen-wantedHistoryLength:]
+		if _, err := histFile.WriteString(strings.Join(parts, "\n")); err != nil {
+			histFile.Close()
+			return nil, nil, err
+		}
+		histFile.Close()
+	}
+	histFile, err = os.OpenFile(histFilePath, os.O_WRONLY|os.O_APPEND, 0660)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer histFile.Close()
+
+	historyStore := linehistory.NewHistory()
+
+	for _, line := range parts {
+		if line == "" {
+			continue
+		}
+		historyStore.Add(line)
+	}
+	return historyStore, histFile, nil
 }

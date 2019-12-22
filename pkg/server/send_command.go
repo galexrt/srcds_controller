@@ -1,0 +1,59 @@
+/*
+Copyright 2019 Alexander Trost <galexrt@googlemail.com>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package server
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+)
+
+// SendCommand sends a command to a server
+func SendCommand(serverName string, args []string) error {
+	log.Infof("sending command '%s' to server %s ...\n", strings.Join(args, " "), serverName)
+
+	serverCfg := config.Cfg.Servers.GetByName(serverName)
+	if serverCfg == nil {
+		return fmt.Errorf("no server config found for %s", serverName)
+	}
+
+	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/", serverCfg.RunnerPort), url.Values{
+		"auth-key": {""},
+		"command":  {strings.Join(args, " ")},
+	})
+	if err != nil {
+		return fmt.Errorf("error during command exec send to server %s. %+v", serverName, err)
+	}
+	if resp.StatusCode == http.StatusOK {
+		log.Infof("successfully sent command to server %s.\n", serverName)
+		return nil
+	}
+
+	out, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(out))
+	if err != nil {
+		return errors.Wrap(err, "failed to read body from send command response")
+	}
+
+	return fmt.Errorf("error during sending of command to srcds_runner for server %s", serverName)
+}

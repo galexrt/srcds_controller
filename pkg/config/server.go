@@ -28,6 +28,7 @@ type Servers []*Server
 // Server config/info for a server
 type Server struct {
 	Name          string               `yaml:"name"`
+	Enabled       bool                 `yaml:"enabled"`
 	Address       string               `yaml:"address"`
 	Port          int                  `yaml:"port"`
 	RunnerPort    int                  `yaml:"runnerPort"`
@@ -38,9 +39,9 @@ type Server struct {
 	RCON          RCON                 `yaml:"rcon"`
 	Checks        []Check              `yaml:"checks"`
 	OnExitCommand string               `yaml:"onExitCommand"`
-	Enabled       bool                 `yaml:"enabled"`
 	GameID        int64                `yaml:"gameID"`
 	Resources     *container.Resources `yaml:"resources,omitempty"`
+	ACL           ACL                  `yaml:"acl"`
 }
 
 // RunOptions run options such as user and group id to run the server as.
@@ -55,12 +56,18 @@ type RCON struct {
 }
 
 // GetByName return server from list by name
-func (s Servers) GetByName(name string) (int, *Server) {
+func (s Servers) GetByName(name string) *Server {
 	name = strings.ToLower(name)
-	for index, server := range s {
+	for _, server := range s {
 		if strings.ToLower(server.Name) == name {
-			return index, server
+			return server
 		}
 	}
-	return -1, nil
+	return nil
+}
+
+// ACL ACL info
+type ACL struct {
+	Users  []int `yaml:"users"`
+	Groups []int `yaml:"groups"`
 }

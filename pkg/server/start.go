@@ -1,0 +1,178 @@
+/*
+Copyright 2019 Alexander Trost <galexrt@googlemail.com>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package server
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/docker/client"
+	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/util"
+	log "github.com/sirupsen/logrus"
+)
+
+// Start starts a server
+func Start(serverName string) error {
+	log.Infof("starting server %s ...", serverName)
+
+	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
+		return fmt.Errorf("no server config found for %s", serverName)
+	}
+
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	if err != nil && !client.IsErrNotFound(err) {
+		return err
+	} else if err == nil && (cont.State.Status != "created" && cont.State.Status != "exited") {
+		return fmt.Errorf("server %s container is already existing / running", serverName)
+	}
+
+	var containerID string
+	if cont.ContainerJSONBase != nil && (cont.State.Status == "created" || cont.State.Status == "exited") {
+		containerID = cont.ID
+	} else {
+		serverCfg := config.Cfg.Servers.GetByName(serverName)
+		if serverCfg == nil {
+			return fmt.Errorf("no server config found for %s", serverName)
+		}
+		serverDir := serverCfg.Path
+		mountDir := serverCfg.MountsDir
+
+		var hostname string
+		hostname, err = os.Hostname()
+		if err != nil {
+			return err
+		}
+
+		contArgs := strslice.StrSlice{
+			"./srcds_run",
+			"-port",
+			strconv.Itoa(serverCfg.Port),
+		}
+
+		for _, arg := range serverCfg.Flags {
+			arg = strings.Replace(arg, "%RCON_PASSWORD%", serverCfg.RCON.Password, -1)
+			contArgs = append(contArgs, arg)
+		}
+
+		contCfg := &container.Config{
+			Labels: map[string]string{
+				"app":        "gameserver",
+				"managed-by": "srcds_controller",
+			},
+			Env: []string{
+				fmt.Sprintf("SRCDS_CONTROLLER_SERVER_NAME=%s", serverCfg.Name),
+			},
+			Cmd:         contArgs,
+			AttachStdin: true,
+			Tty:         false,
+			OpenStdin:   true,
+			Hostname:    hostname,
+			User:        fmt.Sprintf("%d:%d", serverCfg.RunOptions.UID, serverCfg.RunOptions.GID),
+			Image:       config.Cfg.Docker.Image,
+			WorkingDir:  serverDir,
+		}
+		contHostCfg := &container.HostConfig{
+			RestartPolicy: container.RestartPolicy{
+				Name: "no",
+			},
+			Mounts: []mount.Mount{
+				{
+					Type:     mount.TypeBind,
+					Source:   "/etc/localtime",
+					Target:   "/etc/localtime",
+					ReadOnly: true,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   "/etc/timezone",
+					Target:   "/etc/timezone",
+					ReadOnly: true,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   "/etc/passwd",
+					Target:   "/etc/passwd",
+					ReadOnly: true,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   "/etc/group",
+					Target:   "/etc/group",
+					ReadOnly: true,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   config.FilePath,
+					Target:   "/config/config.yaml",
+					ReadOnly: true,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   config.FilePath,
+					Target:   "/socket/socket.sock",
+					ReadOnly: false,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   serverDir,
+					Target:   serverDir,
+					ReadOnly: false,
+				},
+			},
+			NetworkMode: "host",
+		}
+		if mountDir != "" {
+			contHostCfg.Mounts = append(contHostCfg.Mounts, mount.Mount{
+				Type:   mount.TypeBind,
+				Source: mountDir,
+				Target: mountDir,
+			})
+		}
+		if serverCfg.Resources != nil {
+			contHostCfg.Resources = *serverCfg.Resources
+		}
+
+		netCfg := &network.NetworkingConfig{}
+		var resp container.ContainerCreateCreatedBody
+		resp, err = DockerCli.ContainerCreate(context.Background(), contCfg, contHostCfg, netCfg, util.GetContainerName(serverName))
+		if err != nil {
+			return err
+		}
+
+		for _, warning := range resp.Warnings {
+			log.Warning(warning)
+		}
+		containerID = resp.ID
+	}
+
+	if err = DockerCli.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{}); err != nil {
+		return err
+	}
+
+	log.Infof("started server %s.", serverName)
+
+	return nil
+}

@@ -21,29 +21,28 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/util"
+	log "github.com/sirupsen/logrus"
 )
 
-var (
-	// DockerCli Docker client
-	DockerCli *client.Client
-)
-
-// GetServerContainer return container for given server name
-func GetServerContainer(serverName string) (types.ContainerJSON, error) {
-	var err error
-	var cont types.ContainerJSON
+// Remove remove a server container
+func Remove(serverName string) error {
+	log.Infof("removing server container %s ...", serverName)
 
 	if serverCfg := config.Cfg.Servers.GetByName(serverName); serverCfg == nil {
-		return cont, fmt.Errorf("no server config found for %s", serverName)
+		return fmt.Errorf("no server config found for %s", serverName)
 	}
 
-	cont, err = DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverName))
 	if err != nil {
-		return cont, err
+		return err
 	}
 
-	return cont, nil
+	if err = DockerCli.ContainerRemove(context.Background(), cont.ID, types.ContainerRemoveOptions{}); err != nil {
+		return err
+	}
+
+	log.Infof("removed server container %s.", serverName)
+	return nil
 }
