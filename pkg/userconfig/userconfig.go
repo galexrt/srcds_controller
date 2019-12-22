@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"gopkg.in/yaml.v2"
@@ -36,6 +37,7 @@ type UserConfig struct {
 }
 
 type Config struct {
+	sync.Mutex
 	Servers map[string]*config.Config
 }
 

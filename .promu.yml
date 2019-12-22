@@ -17,6 +17,8 @@ build:
           path: ./cmd/srcds_controller
         - name: srcds_runner
           path: ./cmd/srcds_runner
+        - name: srcds_cmdrelay
+          path: ./cmd/srcds_cmdrelay
 
 tarball:
     files:

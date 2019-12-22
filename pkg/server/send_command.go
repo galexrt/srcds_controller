@@ -17,8 +17,10 @@ limitations under the License.
 package server
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -33,7 +35,15 @@ import (
 func SendCommand(serverCfg *config.Config, args []string) error {
 	log.Infof("sending command '%s' to server %s ...\n", strings.Join(args, " "), serverCfg.Server.Name)
 
-	resp, err := http.PostForm(fmt.Sprintf("unix://%s", path.Join(serverCfg.Server.Path, ".srcds_runner.sock")), url.Values{
+	httpc := http.Client{
+		Transport: &http.Transport{
+			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+				return net.Dial("unix", fmt.Sprintf("unix://%s", path.Join(serverCfg.Server.Path, ".srcds_runner.sock")))
+			},
+		},
+	}
+
+	resp, err := httpc.PostForm("http://unixlocalhost/", url.Values{
 		"command": {strings.Join(args, " ")},
 	})
 	if err != nil {

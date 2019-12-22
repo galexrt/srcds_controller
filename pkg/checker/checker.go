@@ -35,6 +35,10 @@ var (
 type Checker struct {
 }
 
+func init() {
+	rand.Seed(time.Now().Unix())
+}
+
 func New() *Checker {
 	return &Checker{}
 }
@@ -108,6 +112,5 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 }
 
 func calculateTimeSplay(begin int, end int) time.Duration {
-	rand.Seed(time.Now().Unix())
 	return time.Duration(rand.Intn(end-begin)+begin) * time.Second
 }
