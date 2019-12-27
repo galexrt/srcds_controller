@@ -17,10 +17,10 @@ jobs:
       CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
       DOCKER_IMAGE_NAME: galexrt/srcds_controller
       QUAY_IMAGE_NAME: quay.io/galexrt/srcds_controller
-      DOCKER_TEST_IMAGE_NAME: quay.io/prometheus/golang-builder:1.10-base
+      DOCKER_TEST_IMAGE_NAME: quay.io/prometheus/golang-builder:1.13-base
       REPO_PATH: github.com/galexrt/srcds_controller
     docker:
-    - image: circleci/golang:1.10
+    - image: circleci/golang:1.13
     steps:
     - run: |
         sudo chown circleci:circleci -R /go
