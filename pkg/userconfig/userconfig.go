@@ -31,16 +31,18 @@ import (
 // Cfg variable holding the config object
 var Cfg *Config
 
-// UserConfig
+// UserConfig user config pointing at a list of globs to server directories
 type UserConfig struct {
 	ServerDirectories []string `yaml:"serverDirectories"`
 }
 
+// Config actual config for the services
 type Config struct {
 	sync.Mutex
 	Servers map[string]*config.Config
 }
 
+// Load load the configs into a Config object
 func (uc *UserConfig) Load(cfgs *Config) error {
 	configsToLoad := []string{}
 

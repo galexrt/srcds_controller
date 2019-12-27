@@ -18,11 +18,7 @@ package config
 
 import (
 	"sync"
-
-	"github.com/coreos/pkg/capnslog"
 )
-
-var logger = capnslog.NewPackageLogger("github.com/galexrt/srcds_controller", "pkg/config")
 
 // Cfg variable holding the global config object
 var Cfg *Config
