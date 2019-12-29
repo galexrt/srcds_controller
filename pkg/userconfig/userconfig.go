@@ -55,6 +55,10 @@ func (uc *UserConfig) Load(cfgs *Config) error {
 		configsToLoad = append(configsToLoad, matches...)
 	}
 
+	if len(configsToLoad) == 0 {
+		return fmt.Errorf("no configs to load found in any serverDirectories path")
+	}
+
 	for _, confToLoad := range configsToLoad {
 		if _, err := os.Stat(confToLoad); err == nil {
 			out, err := ioutil.ReadFile(confToLoad)
@@ -80,6 +84,8 @@ func (uc *UserConfig) Load(cfgs *Config) error {
 			return fmt.Errorf("skipping config %s due to error", confToLoad)
 		}
 	}
+
+	fmt.Printf("TEST: %+v\n", configsToLoad)
 
 	return nil
 }

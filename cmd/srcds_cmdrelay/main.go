@@ -30,16 +30,16 @@ var (
 		Use:   "srcds_cmdrelay",
 		Short: "",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			initConfig()
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			logger, err = zap.NewDevelopment()
 			if err != nil {
 				return err
 			}
 
+			initConfig()
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 			// Sync config every 3 minutes
 			go func() {
 				for {
@@ -54,8 +54,7 @@ var (
 			r.GET("/", handler)
 			r.POST("/", handler)
 			logger.Info(fmt.Sprintf("listening on %s", viper.GetString("listen-address")))
-			err = r.Run(viper.GetString("listen-address"))
-			if err != nil {
+			if err := r.Run(viper.GetString("listen-address")); err != nil {
 				return err
 			}
 			return nil
@@ -66,7 +65,7 @@ var (
 func init() {
 	rootCmd.PersistentFlags().String("listen-address", "127.0.0.1:8181", "Listen address")
 	rootCmd.PersistentFlags().String("config", "", "Config file path")
-	rootCmd.PersistentFlags().String("auth-key", "yi_ttDwz1eCJBSu6653mjNpSIqMiNxkinrdv2sUO9DXg6nSeLodmaiplNGL88Qzj", "the auth key used for authentication to the api")
+	rootCmd.PersistentFlags().StringSlice("auth-key", []string{}, "Auth key(s) used for authentication to the cmd relay")
 	viper.BindPFlag("listen-address", rootCmd.PersistentFlags().Lookup("listen-address"))
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag("auth-key", rootCmd.PersistentFlags().Lookup("auth-key"))
@@ -83,7 +82,14 @@ func handler(c *gin.Context) {
 		logger.Warn("no auth key given")
 		return
 	}
-	if authKey != viper.GetString("auth-key") {
+	authed := false
+	for _, aKey := range viper.GetStringSlice("auth-key") {
+		if authKey == aKey {
+			authed = true
+			break
+		}
+	}
+	if !authed {
 		c.String(http.StatusForbidden, "auth key not correct.")
 		logger.Warn("auth key wrong")
 		return
@@ -180,7 +186,7 @@ func initConfig() {
 			logger.Fatal("failed to unmarshal userconfig", zapcore.Field{Key: "error", Interface: err})
 		}
 		if err = userCfg.Load(cfgs); err != nil {
-			logger.Fatal("failed to load configs from userconfig", zapcore.Field{Key: "error", Interface: err})
+			logger.Fatal("failed to load configs from userconfig", zap.Error(err))
 		}
 	} else {
 		logger.Fatal("no config found in home dir nor specified by flag")
