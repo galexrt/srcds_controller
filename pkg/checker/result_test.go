@@ -34,7 +34,7 @@ func TestAdd(t *testing.T) {
 		},
 		Check: config.Check{
 			Name: "dummy",
-			Limit: config.Limit{
+			Limit: &config.Limit{
 				Count: 3,
 				Actions: []string{
 					"log",
@@ -50,7 +50,7 @@ func TestAdd(t *testing.T) {
 		},
 		Check: config.Check{
 			Name: "dummy",
-			Limit: config.Limit{
+			Limit: &config.Limit{
 				Count: 3,
 				Actions: []string{
 					"log",

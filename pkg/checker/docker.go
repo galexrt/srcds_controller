@@ -19,6 +19,7 @@ package checker
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 
 var lastAction = map[string]time.Time{}
 
+// CheckForDockerEvents check for docker container events and react to certain events
 func CheckForDockerEvents(stopCh <-chan struct{}) {
 	filterArgs := filters.NewArgs()
 	filterArgs.Add("app", "gameserver")
@@ -84,6 +86,10 @@ func handleDockerEvent(event events.Message) error {
 			return fmt.Errorf("unable to find server config for ")
 		}
 
+		if !serverCfg.Server.Enabled {
+			return nil
+		}
+
 		if viper.GetBool("dry-run") {
 			log.WithField("server", serverName).Info("dry-run mode active, server restart")
 		} else {
@@ -91,6 +97,58 @@ func handleDockerEvent(event events.Message) error {
 			if err := server.Restart(serverCfg); err != nil {
 				return err
 			}
+		}
+	case "start":
+		if _, ok := event.Actor.Attributes["name"]; !ok {
+			return fmt.Errorf("docker event has no container name in it")
+		}
+		serverName := event.Actor.Attributes["name"]
+		serverCfg, ok := userconfig.Cfg.Servers[serverName]
+		if !ok {
+			return fmt.Errorf("unable to find server config for %s", serverName)
+		}
+		if !serverCfg.Server.Enabled {
+			return nil
+		}
+
+		var componentIDOpt string
+		for _, check := range serverCfg.Server.Checks {
+			if check.Limit != nil {
+				var ok bool
+				componentIDOpt, ok = check.Limit.ActionOpts["cachetComponentID"]
+				if !ok {
+					continue
+				}
+			}
+		}
+		if componentIDOpt == "" {
+			return fmt.Errorf("no cachet component ID given for server")
+		}
+
+		componentID, err := strconv.Atoi(componentIDOpt)
+		if err != nil {
+			return fmt.Errorf("failed to convert cachet component ID string to integer. %+v", err)
+		}
+		if componentID <= 0 {
+			return fmt.Errorf("invalid cachet component ID given for server")
+		}
+
+		if viper.GetBool("dry-run") {
+			log.WithField("server", serverName).Info("dry-run mode active, server started cachet UP incident creation")
+		} else {
+			log.WithField("server", serverName).Info("creating cachet UP incident")
+
+			cachetURL := viper.GetString("cachet-url")
+			if cachetURL == "" {
+				return fmt.Errorf("no cachet url given")
+			}
+
+			cachetToken := viper.GetString("cachet-token")
+			if cachetToken == "" {
+				return fmt.Errorf("no cachet API token given")
+			}
+
+			cachetStartupIncident(cachetURL, cachetToken, componentID)
 		}
 	default:
 		log.WithField("event_action", eventAction).Debugf("docker event isn't of our concern (not of type 'die')")

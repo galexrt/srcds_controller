@@ -20,21 +20,24 @@ type connSaveListener struct {
 	net.Listener
 }
 
+// NewConnSaveListener
 func NewConnSaveListener(wrap net.Listener) net.Listener {
 	return connSaveListener{wrap}
 }
 
-func (self connSaveListener) Accept() (net.Conn, error) {
-	conn, err := self.Listener.Accept()
+func (csl connSaveListener) Accept() (net.Conn, error) {
+	conn, err := csl.Listener.Accept()
 	ptrStr := fmt.Sprintf("%d", &conn)
 	conns[ptrStr] = conn
 	return remoteAddrPtrConn{conn, ptrStr}, err
 }
 
+// GetConn
 func GetConn(r *http.Request) net.Conn {
 	return conns[r.RemoteAddr]
 }
 
+// ConnStateEvent
 func ConnStateEvent(conn net.Conn, event http.ConnState) {
 	if event == http.StateHijacked || event == http.StateClosed {
 		delete(conns, conn.RemoteAddr().String())
@@ -46,8 +49,8 @@ type remoteAddrPtrConn struct {
 	ptrStr string
 }
 
-func (self remoteAddrPtrConn) RemoteAddr() net.Addr {
-	return remoteAddrPtr{self.ptrStr}
+func (rapc remoteAddrPtrConn) RemoteAddr() net.Addr {
+	return remoteAddrPtr{rapc.ptrStr}
 }
 
 type remoteAddrPtr struct {
@@ -58,10 +61,11 @@ func (remoteAddrPtr) Network() string {
 	return ""
 }
 
-func (self remoteAddrPtr) String() string {
-	return self.ptrStr
+func (rap remoteAddrPtr) String() string {
+	return rap.ptrStr
 }
 
+// NewUnixListener create a new unix socket listener
 func NewUnixListener(path string) (net.Listener, error) {
 	if err := unix.Unlink(path); err != nil && !os.IsNotExist(err) {
 		return nil, err

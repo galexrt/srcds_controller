@@ -22,7 +22,7 @@ import (
 
 // Check config for a check, see `pkg/checks/` for available checks
 type Check struct {
-	Limit Limit     `yaml:"limit"`
+	Limit *Limit    `yaml:"limit"`
 	Name  string    `yaml:"name"`
 	Opts  CheckOpts `yaml:"opts"`
 }
@@ -33,9 +33,10 @@ type CheckOpts map[string]string
 // Limit config with limits and actions ot execute when the limits (after or count)
 // have been reached
 type Limit struct {
-	After   time.Duration `yaml:"after"`
-	Count   int64         `yaml:"count"`
-	Actions []string      `yaml:"actions"`
+	After      time.Duration `yaml:"after"`
+	Count      int64         `yaml:"count"`
+	Actions    []string      `yaml:"actions"`
+	ActionOpts CheckOpts     `yaml:"actionOpts"`
 }
 
 // Checker config for the checker.Checker

@@ -52,11 +52,11 @@ func Logs(serverCfg *config.Config, since time.Duration, tail int, follow bool) 
 
 	cmd := exec.Command("docker", args...)
 
-	stdoutIn, _ := cmd.StdoutPipe()
-	stderrIn, _ := cmd.StderrPipe()
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
 	if err := cmd.Start(); err != nil {
 		return nil, nil, err
 	}
 
-	return stdoutIn, stderrIn, nil
+	return stdout, stderr, nil
 }

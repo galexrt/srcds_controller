@@ -33,7 +33,10 @@ func init() {
 
 // Run run a rcon check on a config.Server
 func Run(check config.Check, server *config.Config) bool {
-	rconCfg := config.Cfg.Checks["rcon"]
+	rconCfg, ok := config.Cfg.Checks["rcon"]
+	if !ok {
+		rconCfg = map[string]string{}
+	}
 	if err := mergo.Map(&rconCfg, check.Opts); err != nil {
 		log.Fatalf("failed to merge checks config and checks opts from server %s", server.Server.Name)
 	}

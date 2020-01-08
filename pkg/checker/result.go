@@ -17,14 +17,25 @@ limitations under the License.
 package checker
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/andygrunwald/cachet"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+)
+
+const (
+	cachetDownIncidentName    = "%s wurde neugestartet!"
+	cachetDownIncidentMessage = `%s wurde neugestartet aufgrund von automatischen Server Überwachungsmechanismen.
+
+Sollte der Server aufgrund eines aufgetretenden Server Crash automatisch neugestartet worden sein, sollte dieser in den nächsten 1-2 Minuten wieder erreichbar sein.`
 )
 
 // ResultCounter
@@ -108,25 +119,127 @@ func (r *ResultServerList) runAction(check config.Check, serverCfg *config.Confi
 		defer wg.Done()
 		for _, action := range check.Limit.Actions {
 			switch strings.ToLower(action) {
-			case "restart":
-				if viper.GetBool("dry-run") {
-					log.WithField("server", serverCfg.Server.Name).Debugf("dry-run mode active, server %s restart", serverCfg.Server.Name)
-				} else {
-					log.WithField("server", serverCfg.Server.Name).Infof("need to restart server %s", serverCfg.Server.Name)
-					if err := server.SendCommand(serverCfg, []string{"say", "SRCDS CHECKER RESTART MARKER"}); err != nil {
-						log.Error(err)
-					}
-					if err := server.Restart(serverCfg); err != nil {
-						log.WithField("server", serverCfg.Server.Name).Error(err)
-					}
-					log.WithField("server", serverCfg.Server.Name).Infof("server %s restarted", serverCfg.Server.Name)
-				}
 			case "log":
 				log.WithField("server", serverCfg.Server.Name).Warn("runAction dummy log action")
+			case "restart":
+				r.restartAction(check, serverCfg)
+			case "cachet":
+				r.cachetAction(check, serverCfg)
 			}
 		}
 	}()
 
 	wg.Wait()
 	return
+}
+
+func (r *ResultServerList) restartAction(check config.Check, serverCfg *config.Config) {
+	if viper.GetBool("dry-run") {
+		log.WithField("server", serverCfg.Server.Name).Infof("dry-run mode active, server %s restart", serverCfg.Server.Name)
+	} else {
+		log.WithField("server", serverCfg.Server.Name).Infof("need to restart server %s", serverCfg.Server.Name)
+		if err := server.SendCommand(serverCfg, []string{"say", "SRCDS CHECKER RESTART MARKER"}); err != nil {
+			log.Error(err)
+		}
+		if err := server.Restart(serverCfg); err != nil {
+			log.WithField("server", serverCfg.Server.Name).Error(err)
+		}
+		log.WithField("server", serverCfg.Server.Name).Infof("server %s restarted", serverCfg.Server.Name)
+	}
+}
+
+func (r *ResultServerList) cachetAction(check config.Check, serverCfg *config.Config) {
+	logger := log.WithField("server", serverCfg.Server.Name)
+	if viper.GetBool("dry-run") {
+		logger.Infof("dry-run mode active, server %s cachet incident or incident update", serverCfg.Server.Name)
+		return
+	}
+	cachetURL := viper.GetString("cachet-url")
+	if cachetURL == "" {
+		logger.Error("no cachet URL given to controller")
+		return
+	}
+	cachetToken := viper.GetString("cachet-token")
+	if cachetToken == "" {
+		logger.Error("no cachet API token given to controller")
+		return
+	}
+
+	if check.Limit == nil {
+		logger.Error("no cachet API token given to controller")
+		return
+	}
+	componentIDOpt, ok := check.Limit.ActionOpts["cachetComponentID"]
+	if !ok || componentIDOpt == "" {
+		logger.Error("no cachet component ID found for server")
+		return
+	}
+	componentID, err := strconv.Atoi(componentIDOpt)
+	if err != nil {
+		logger.Errorf("failed to convert cachet component ID string to integer. %+v", err)
+		return
+	}
+
+	client, err := cachet.NewClient(cachetURL, nil)
+	if err != nil {
+		logger.Error("failed to create cachet API client")
+		return
+	}
+	client.Authentication.SetTokenAuth(cachetToken)
+
+	pong, resp, err := client.General.Ping()
+	if err != nil {
+		logger.Error("failed to ping cachet API")
+		return
+	}
+
+	logger.WithFields(logrus.Fields{"status": resp.Status, "response": pong}).Debug("cachet pinged sucessful")
+
+	component, _, err := client.Components.Get(componentID)
+	if err != nil {
+		logger.Error("failed to get component (ID: %d) from cachet API. %+v", componentID, err)
+		return
+	}
+
+	incidentResp, _, err := client.Incidents.GetAll(&cachet.IncidentsQueryParams{
+		ComponentID: componentID,
+		Visible:     cachet.ComponentGroupVisibilityPublic,
+	})
+	if err != nil {
+		logger.Error("failed to get incidents from cachet API. %+v", err)
+		return
+	}
+
+	if len(incidentResp.Incidents) > 0 {
+		var incident cachet.Incident
+		for _, incident = range incidentResp.Incidents {
+			if strings.HasPrefix(incident.Name, fmt.Sprintf(cachetDownIncidentName, component.Name)) {
+				break
+			}
+		}
+
+		updated, err := time.Parse("2020-01-08 21:38:45", incident.UpdatedAt)
+		if err != nil {
+			logger.Errorf("failed to parse incident updated at time. %+v", err)
+			return
+		}
+		// Don't spam the Status page with restarted messages
+		if time.Now().Add(1*time.Hour).Sub(updated) > 60*time.Minute {
+			return
+		}
+	}
+
+	newIncident := &cachet.Incident{
+		Name:            fmt.Sprintf(cachetDownIncidentName, component.Name),
+		Visible:         cachet.IncidentVisibilityPublic,
+		ComponentID:     componentID,
+		ComponentStatus: cachet.ComponentStatusMajorOutage,
+		Status:          cachet.IncidentStatusInvestigating,
+		Message:         fmt.Sprintf(cachetDownIncidentMessage, component.Name),
+		Notify:          false,
+	}
+	if _, _, err := client.Incidents.Create(newIncident); err != nil {
+		logger.Errorf("failed to create new incident. %+v", err)
+		return
+	}
 }

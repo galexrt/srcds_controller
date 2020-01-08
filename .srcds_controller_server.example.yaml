@@ -23,6 +23,11 @@ server:
   gameID: 4020
   resources: {}
     #cpusetcpus: "0,1"
+  acl:
+    users:
+      - 1000
+    groups:
+      - 1000
   checks:
     - name: rcon
       limit:
@@ -30,6 +35,9 @@ server:
         count: 1
         actions:
           - RESTART
+          - CACHET
+        actionOpts:
+          cachetComponentID: 5
 checker:
   interval: 30s
   splay:
