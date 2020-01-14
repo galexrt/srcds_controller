@@ -49,7 +49,7 @@ func cachetStartupIncident(cachetURL string, cachetToken string, componentID int
 
 	component, _, err := client.Components.Get(componentID)
 	if err != nil {
-		log.Error("failed to get component (ID: %d) from cachet API. %+v", componentID, err)
+		log.Errorf("failed to get component (ID: %d) from cachet API. %+v", componentID, err)
 		return
 	}
 
@@ -58,7 +58,7 @@ func cachetStartupIncident(cachetURL string, cachetToken string, componentID int
 		Visible:     cachet.ComponentGroupVisibilityPublic,
 	})
 	if err != nil {
-		log.Error("failed to get incidents from cachet API. %+v", err)
+		log.Errorf("failed to get incidents from cachet API. %+v", err)
 		return
 	}
 

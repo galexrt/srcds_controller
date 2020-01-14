@@ -197,7 +197,7 @@ func (r *ResultServerList) cachetAction(check config.Check, serverCfg *config.Co
 
 	component, _, err := client.Components.Get(componentID)
 	if err != nil {
-		logger.Error("failed to get component (ID: %d) from cachet API. %+v", componentID, err)
+		logger.Errorf("failed to get component (ID: %d) from cachet API. %+v", componentID, err)
 		return
 	}
 
@@ -206,7 +206,7 @@ func (r *ResultServerList) cachetAction(check config.Check, serverCfg *config.Co
 		Visible:     cachet.ComponentGroupVisibilityPublic,
 	})
 	if err != nil {
-		logger.Error("failed to get incidents from cachet API. %+v", err)
+		logger.Errorf("failed to get incidents from cachet API. %+v", err)
 		return
 	}
 
