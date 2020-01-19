@@ -48,3 +48,14 @@ func (c *Config) Verify() error {
 type General struct {
 	Umask int `yaml:"umask"`
 }
+
+// GlobalConfig global config file always read from `/etc/srcds_controller/config.yaml`
+type GlobalConfig struct {
+	Cachet *Cachet `yaml:"cachet"`
+}
+
+// Cachet cachet integration config
+type Cachet struct {
+	URL    string `yaml:"url"`
+	APIKey string `yaml:"apiKey"`
+}
