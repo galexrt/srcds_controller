@@ -36,7 +36,7 @@ import (
 
 // Start starts a server
 func Start(serverCfg *config.Config) error {
-	log.Infof("starting server %s ...")
+	log.Infof("starting server %s ...", serverCfg.Server.Name)
 
 	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 	if err != nil && !client.IsErrNotFound(err) {
@@ -81,7 +81,7 @@ func Start(serverCfg *config.Config) error {
 			OpenStdin:   true,
 			Hostname:    hostname,
 			User:        fmt.Sprintf("%d:%d", serverCfg.Server.RunOptions.UID, serverCfg.Server.RunOptions.GID),
-			Image:       config.Cfg.Docker.Image,
+			Image:       serverCfg.Docker.Image,
 			WorkingDir:  serverDir,
 		}
 		contHostCfg := &container.HostConfig{

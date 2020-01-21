@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/tabwriter"
 
 	"github.com/docker/docker/client"
@@ -43,7 +44,7 @@ func List() error {
 		if cont.ContainerJSONBase != nil {
 			status = cont.State.Status
 		}
-		fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", serverCfg.Server.Name, serverCfg.Server.Port, status, serverCfg.Server.Path)
+		fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", serverCfg.Server.Name, serverCfg.Server.Port, status, filepath.Dir(serverCfg.Server.Path))
 	}
 	return w.Flush()
 }

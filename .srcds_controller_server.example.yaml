@@ -13,9 +13,6 @@ server:
   flags:
     - -console
     - -game garrysmod
-  #runOptions:
-  #  uid: 1001
-  #  gid: 1001
   onExitCommand: quit
   enabled: true
   rcon:

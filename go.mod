@@ -5,10 +5,7 @@ go 1.13
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/andygrunwald/cachet v0.0.0-20180404195246-2a1ca51087fd
-	github.com/blend/go-sdk v2.0.0+incompatible
-	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
@@ -18,7 +15,7 @@ require (
 	github.com/gdamore/tcell v1.3.0 // indirect
 	github.com/gin-gonic/gin v1.5.0
 	github.com/go-playground/universal-translator v0.17.0 // indirect
-	github.com/google/go-github/v25 v25.1.3 // indirect
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.8
 	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
@@ -33,9 +30,7 @@ require (
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.3.0 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.8.0
-	github.com/prometheus/promu v0.5.0 // indirect
+	github.com/prometheus/common v0.9.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
@@ -48,11 +43,8 @@ require (
 	go.uber.org/zap v1.13.0
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
 	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa // indirect
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/sys v0.0.0-20200117145432-59e60aa80a0c
+	golang.org/x/sys v0.0.0-20200121082415-34d275377bf9
 	golang.org/x/tools v0.0.0-20191220234730-f13409bbebaf // indirect
-	google.golang.org/appengine v1.6.5 // indirect
-	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/go-playground/validator.v9 v9.30.2 // indirect
 	gopkg.in/yaml.v2 v2.2.7
 )
