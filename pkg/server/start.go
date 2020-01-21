@@ -20,14 +20,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/util"
@@ -58,24 +55,12 @@ func Start(serverCfg *config.Config) error {
 			return err
 		}
 
-		contArgs := strslice.StrSlice{
-			"./srcds_run",
-			"-port",
-			strconv.Itoa(serverCfg.Server.Port),
-		}
-
-		for _, arg := range serverCfg.Server.Flags {
-			arg = strings.Replace(arg, "%RCON_PASSWORD%", serverCfg.Server.RCON.Password, -1)
-			contArgs = append(contArgs, arg)
-		}
-
 		contCfg := &container.Config{
 			Labels: map[string]string{
 				"app":        "gameserver",
 				"managed-by": "srcds_controller",
 			},
 			Env:         []string{},
-			Cmd:         contArgs,
 			AttachStdin: true,
 			Tty:         false,
 			OpenStdin:   true,
@@ -125,9 +110,10 @@ func Start(serverCfg *config.Config) error {
 		}
 		if mountDir != "" {
 			contHostCfg.Mounts = append(contHostCfg.Mounts, mount.Mount{
-				Type:   mount.TypeBind,
-				Source: mountDir,
-				Target: mountDir,
+				Type:     mount.TypeBind,
+				Source:   mountDir,
+				Target:   mountDir,
+				ReadOnly: true,
 			})
 		}
 		if serverCfg.Server.Resources != nil {

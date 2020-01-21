@@ -23,8 +23,8 @@ require (
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.0.3 // indirect
 	github.com/marcusolsson/tui-go v0.4.0
-	github.com/mattn/go-isatty v0.0.11 // indirect
-	github.com/mattn/go-runewidth v0.0.7 // indirect
+	github.com/mattn/go-isatty v0.0.12 // indirect
+	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/pelletier/go-toml v1.6.0 // indirect
@@ -37,15 +37,16 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.6.1
+	github.com/spf13/viper v1.6.2
 	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.13.0
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
 	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa // indirect
 	golang.org/x/sys v0.0.0-20200121082415-34d275377bf9
-	golang.org/x/tools v0.0.0-20191220234730-f13409bbebaf // indirect
-	gopkg.in/go-playground/validator.v9 v9.30.2 // indirect
+	golang.org/x/tools v0.0.0-20200121222547-29f64efd556a // indirect
+	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
+	gopkg.in/ini.v1 v1.51.1 // indirect
 	gopkg.in/yaml.v2 v2.2.7
 )
 

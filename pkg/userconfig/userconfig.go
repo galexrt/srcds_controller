@@ -85,7 +85,5 @@ func (uc *UserConfig) Load(cfgs *Config) error {
 		}
 	}
 
-	fmt.Printf("TEST: %+v\n", configsToLoad)
-
 	return nil
 }

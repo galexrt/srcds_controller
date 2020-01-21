@@ -38,7 +38,7 @@ func SendCommand(serverCfg *config.Config, args []string) error {
 	httpc := http.Client{
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", fmt.Sprintf("unix://%s", path.Join(serverCfg.Server.Path, ".srcds_runner.sock")))
+				return net.Dial("unix", path.Join(serverCfg.Server.Path, ".srcds_runner.sock"))
 			},
 		},
 	}

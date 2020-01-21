@@ -41,7 +41,9 @@ var serverConsoleCmd = &cobra.Command{
 	Short:             "Show server logs and allow commands to be directly posted to one or more servers",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.SetOutput(ioutil.Discard)
+		if !viper.GetBool("debug") {
+			log.SetOutput(ioutil.Discard)
+		}
 
 		servers, err := checkServers(cmd, args)
 		if err != nil {
@@ -67,29 +69,25 @@ var serverConsoleCmd = &cobra.Command{
 		input.SetFocused(true)
 		input.SetSizePolicy(tui.Expanding, tui.Maximum)
 
+		outChan := make(chan string)
+
 		input.OnSubmit(func(e *tui.Entry) {
-			if e.Text() == "" {
+			command := e.Text()
+			if command == "" {
 				return
 			}
-			command := e.Text()
 			for _, serverCfg := range servers {
 				if err := server.SendCommand(serverCfg, []string{command}); err != nil {
-					history.Append(tui.NewHBox(
-						tui.NewLabel("ERROR "),
-						tui.NewLabel(err.Error()),
-						tui.NewSpacer(),
-					))
+					outChan <- fmt.Sprintf("\n=> SC CONSOLE ERROR: %+v\n\n", err)
 				}
 			}
 			historyStore.Add(command)
 			if viper.GetBool("history") {
-				go func(line string) {
-					if histFile != nil {
-						if _, err := histFile.WriteString(command + "\n"); err != nil {
-							log.Fatal(err)
-						}
+				if histFile != nil {
+					if _, err := histFile.WriteString(command + "\n"); err != nil {
+						log.Fatal(err)
 					}
-				}(command)
+				}
 			}
 			input.SetText("")
 		})
@@ -124,7 +122,6 @@ var serverConsoleCmd = &cobra.Command{
 			input.SetText(histRet)
 		})
 
-		outChan := make(chan string)
 		errors := make(chan error)
 
 		for _, serverCfg := range servers {
@@ -156,7 +153,6 @@ var serverConsoleCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stderr)
 				for scanner.Scan() {
 					msg := scanner.Text()
-					//outChan <- fmt.Sprintf("TEST : %#X : TEST", msg)
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
 					}
@@ -192,7 +188,9 @@ var serverConsoleCmd = &cobra.Command{
 
 func init() {
 	serverConsoleCmd.PersistentFlags().Bool("history", true, "If history should be enabled")
+	serverConsoleCmd.PersistentFlags().Bool("debug", false, "If log messages for debugging should be shown")
 	viper.BindPFlag("history", serverConsoleCmd.PersistentFlags().Lookup("history"))
+	viper.BindPFlag("debug", serverConsoleCmd.PersistentFlags().Lookup("debug"))
 
 	rootCmd.AddCommand(serverConsoleCmd)
 }
@@ -238,7 +236,6 @@ func history() (*linehistory.History, *os.File, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	defer histFile.Close()
 
 	historyStore := linehistory.NewHistory()
 

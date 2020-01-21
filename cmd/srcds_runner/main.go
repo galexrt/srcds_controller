@@ -26,11 +26,14 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/acarl005/stripansi"
+	"github.com/docker/docker/api/types/strslice"
 	"github.com/galexrt/srcds_controller/pkg/chcloser"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/gin-gonic/gin"
@@ -69,13 +72,26 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	config.Cfg.Lock()
 	syscall.Umask(config.Cfg.General.Umask)
 
-	if len(os.Args) <= 1 {
-		logger.Fatal("no server args given")
+	contArgs := strslice.StrSlice{
+		"./srcds_run",
+		"-port",
+		strconv.Itoa(config.Cfg.Server.Port),
 	}
 
-	logger.Infof("starting srcds_runner on %s with following args: %+v", ListenAddress, os.Args[1:])
+	for _, arg := range config.Cfg.Server.Flags {
+		arg = strings.Replace(arg, "%RCON_PASSWORD%", config.Cfg.Server.RCON.Password, -1)
+		contArgs = append(contArgs, arg)
+	}
+	config.Cfg.Unlock()
+
+	logger.Infof("starting srcds_runner on %s with following args: %+v", ListenAddress, contArgs)
+
+	if len(contArgs) < 2 {
+		logger.Fatal("not enough arguments for server must have at least 2")
+	}
 
 	sigs := make(chan os.Signal, 1)
 	stopCh := make(chan struct{})
@@ -91,11 +107,6 @@ func main() {
 		}
 	}()
 
-	args := []string{}
-	if len(os.Args) > 2 {
-		args = os.Args[2:]
-	}
-
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 
@@ -107,7 +118,7 @@ func main() {
 
 	go listenAndServe(r)
 
-	cmd := exec.CommandContext(ctx, os.Args[1], args...)
+	cmd := exec.CommandContext(ctx, contArgs[0], contArgs[1:]...)
 	cmd.Env = os.Environ()
 	tty, err = pty.Start(cmd)
 	if err != nil {
