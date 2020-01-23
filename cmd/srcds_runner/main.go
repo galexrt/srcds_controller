@@ -67,7 +67,9 @@ func main() {
 	logger = loggerProd.Sugar()
 
 	config.Cfg = &config.Config{}
-	loadConfig()
+	if err := loadConfig(); err != nil {
+		logger.Fatal(err)
+	}
 	if err := config.Cfg.Verify(); err != nil {
 		logger.Fatal(err)
 	}

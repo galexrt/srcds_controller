@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -38,6 +39,16 @@ func (c *Config) Verify() error {
 	if c.General == nil {
 		c.General = &General{
 			Umask: 7,
+		}
+	}
+
+	if c.Server == nil {
+		return fmt.Errorf("no server config found")
+	}
+	if c.Docker == nil {
+		c.Docker = &Docker{
+			Image:      "galexrt/srcds_controller:runner-latest",
+			NamePrefix: "game-",
 		}
 	}
 
