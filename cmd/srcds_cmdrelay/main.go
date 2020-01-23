@@ -40,6 +40,10 @@ var (
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(viper.GetStringSlice("auth-key")) == 0 {
+				return fmt.Errorf("no auth key given, refusing to start without authentication")
+			}
+
 			// Sync config every 3 minutes
 			go func() {
 				for {
