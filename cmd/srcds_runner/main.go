@@ -51,6 +51,7 @@ const (
 
 var (
 	logger       *zap.SugaredLogger
+	cfgMutex     = &sync.Mutex{}
 	chancloser   = &chcloser.ChannelCloser{}
 	tty          *os.File
 	out          io.Reader
@@ -74,7 +75,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	config.Cfg.Lock()
+	cfgMutex.Lock()
 	syscall.Umask(config.Cfg.General.Umask)
 
 	contArgs := strslice.StrSlice{
@@ -87,7 +88,7 @@ func main() {
 		arg = strings.Replace(arg, "%RCON_PASSWORD%", config.Cfg.Server.RCON.Password, -1)
 		contArgs = append(contArgs, arg)
 	}
-	config.Cfg.Unlock()
+	cfgMutex.Unlock()
 
 	logger.Infof("starting srcds_runner on %s with following args: %+v", ListenAddress, contArgs)
 
@@ -164,9 +165,9 @@ func main() {
 		consoleMutex.Lock()
 
 		if tty != nil {
-			config.Cfg.Lock()
+			cfgMutex.Lock()
 			onExitCommand := config.Cfg.Server.OnExitCommand
-			config.Cfg.Unlock()
+			cfgMutex.Unlock()
 			if onExitCommand != "" {
 				logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
 
@@ -247,8 +248,8 @@ func loadConfig() error {
 	if err != nil {
 		return err
 	}
-	config.Cfg.Lock()
-	defer config.Cfg.Unlock()
+	cfgMutex.Lock()
+	defer cfgMutex.Unlock()
 	if err := yaml.Unmarshal(out, config.Cfg); err != nil {
 		return err
 	}
@@ -261,9 +262,9 @@ func reconciliation(stopCh chan struct{}) {
 		if err := loadConfig(); err != nil {
 			logger.Fatal(err)
 		}
-		config.Cfg.Lock()
+		cfgMutex.Lock()
 		serverCfg := config.Cfg.Server
-		config.Cfg.Unlock()
+		cfgMutex.Unlock()
 		if serverCfg == nil {
 			logger.Error("no / empty config found for server")
 		} else {

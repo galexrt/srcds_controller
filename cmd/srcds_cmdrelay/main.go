@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"sync"
 	"syscall"
 	"time"
 
@@ -24,9 +25,10 @@ import (
 )
 
 var (
-	home    string
-	logger  *zap.Logger
-	rootCmd = &cobra.Command{
+	cfgMutex = &sync.Mutex{}
+	home     string
+	logger   *zap.Logger
+	rootCmd  = &cobra.Command{
 		Use:   "srcds_cmdrelay",
 		Short: "",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -48,9 +50,9 @@ var (
 			go func() {
 				for {
 					time.Sleep(3 * time.Minute)
-					userconfig.Cfg.Lock()
+					cfgMutex.Lock()
 					initConfig()
-					userconfig.Cfg.Unlock()
+					cfgMutex.Unlock()
 				}
 			}()
 
@@ -121,9 +123,9 @@ func handler(c *gin.Context) {
 		return
 	}
 
-	userconfig.Cfg.Lock()
+	cfgMutex.Lock()
 	serverCfg, ok := userconfig.Cfg.Servers[screen]
-	userconfig.Cfg.Unlock()
+	cfgMutex.Unlock()
 	if !ok {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("no server config found by given screen name %s", screen))
 		return
@@ -132,10 +134,11 @@ func handler(c *gin.Context) {
 	httpc := http.Client{
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", fmt.Sprintf("unix://%s", path.Join(serverCfg.Server.Path, ".srcds_runner.sock")))
+				return net.Dial("unix", path.Join(serverCfg.Server.Path, ".srcds_runner.sock"))
 			},
 		},
 	}
+
 	resp, err := httpc.PostForm("http://unixlocalhost/", url.Values{
 		"command": {command},
 	})
