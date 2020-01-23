@@ -24,6 +24,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverStartCmd represents the start command
@@ -43,8 +44,9 @@ var serverStartCmd = &cobra.Command{
 			wg.Add(1)
 			go func(cfg *config.Config) {
 				defer wg.Done()
+
 				if err := server.Start(cfg); err != nil {
-					log.Errorf("%+v", err)
+					log.Errorf("error during server start. %+v", err)
 					errorOccured = true
 				}
 			}(serverCfg)
@@ -58,5 +60,8 @@ var serverStartCmd = &cobra.Command{
 }
 
 func init() {
+	serverStartCmd.PersistentFlags().BoolP("remove", "r", true, "Remove the server container before starting if it exists")
+	viper.BindPFlag("remove", serverStartCmd.PersistentFlags().Lookup("remove"))
+
 	rootCmd.AddCommand(serverStartCmd)
 }

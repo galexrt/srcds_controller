@@ -101,14 +101,21 @@ var serverToolsNiceRestart = &cobra.Command{
 					wg.Add(1)
 					go func(cfg *config.Config) {
 						defer wg.Done()
+
 						if err := server.Stop(cfg); err != nil {
-							log.Errorf("%+v", err)
+							log.Errorf("error during server stop. %+v", err)
 							errorOccured = true
 						}
+
+						if err := server.Remove(cfg); err != nil {
+							log.Errorf("error during server container removal. %+v", err)
+							errorOccured = true
+						}
+
 						if !viper.GetBool("stop-only") {
 							time.Sleep(500 * time.Millisecond)
 							if err := server.Start(cfg); err != nil {
-								log.Errorf("%+v", err)
+								log.Errorf("error during server start. %+v", err)
 								errorOccured = true
 							}
 						}
@@ -153,12 +160,14 @@ func init() {
 	serverToolsNiceRestart.PersistentFlags().String("announce-seconds", "say Server Restart in %d second(s)!", "Command template to be sent to servers during seconds over countdown")
 	serverToolsNiceRestart.PersistentFlags().StringSlice("default-announce-times", []string{"EVERY_MINUTE", "45", "30", "15", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"}, "Default times  at which the left time should be announced")
 	serverToolsNiceRestart.PersistentFlags().StringSlice("additional-announce-times", []string{}, "At which additional times the left time should be announced")
+	serverToolsNiceRestart.PersistentFlags().BoolP("remove", "r", true, "Remove the server container on restart")
 	viper.BindPFlag("duration", serverToolsNiceRestart.PersistentFlags().Lookup("duration"))
 	viper.BindPFlag("stop-only", serverToolsNiceRestart.PersistentFlags().Lookup("stop-only"))
 	viper.BindPFlag("announce-minutes", serverToolsNiceRestart.PersistentFlags().Lookup("announce-minutes"))
 	viper.BindPFlag("announce-seconds", serverToolsNiceRestart.PersistentFlags().Lookup("announce-seconds"))
 	viper.BindPFlag("default-announce-times", serverToolsNiceRestart.PersistentFlags().Lookup("default-announce-times"))
 	viper.BindPFlag("additional-announce-times", serverToolsNiceRestart.PersistentFlags().Lookup("additional-announce-times"))
+	viper.BindPFlag("remove", serverToolsNiceRestart.PersistentFlags().Lookup("remove"))
 
 	serverToolsCmd.AddCommand(serverToolsNiceRestart)
 }

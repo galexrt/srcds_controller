@@ -45,8 +45,14 @@ var serverStopCmd = &cobra.Command{
 			wg.Add(1)
 			go func(cfg *config.Config) {
 				defer wg.Done()
+
 				if err := server.Stop(cfg); err != nil {
-					log.Errorf("%+v", err)
+					log.Errorf("error during container stop. %+v", err)
+					errorOccured = true
+				}
+
+				if err := server.Remove(cfg); err != nil {
+					log.Errorf("error during container removal. %+v", err)
 					errorOccured = true
 				}
 			}(serverCfg)
@@ -61,7 +67,9 @@ var serverStopCmd = &cobra.Command{
 
 func init() {
 	serverStopCmd.PersistentFlags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
+	serverStopCmd.PersistentFlags().BoolP("remove", "r", true, "Remove the server container before starting if it exists")
 	viper.BindPFlag("timeout", serverStopCmd.PersistentFlags().Lookup("timeout"))
+	viper.BindPFlag("remove", serverStopCmd.PersistentFlags().Lookup("remove"))
 
 	rootCmd.AddCommand(serverStopCmd)
 }
