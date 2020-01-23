@@ -22,6 +22,7 @@ DOCKER_IMAGE_TAG  ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 all: format style vet test build
 
 build: promu
+	CGO_ENABLED=1 GOOS=linux go build -v -o srcds_runner ./cmd/srcds_runner/
 	@$(PROMU) build --prefix $(PREFIX)
 
 crossbuild: promu

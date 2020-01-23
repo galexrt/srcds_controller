@@ -96,7 +96,7 @@ func handler(c *gin.Context) {
 		}
 	}
 	if !authed {
-		c.String(http.StatusForbidden, "auth key not correct.")
+		c.String(http.StatusForbidden, "auth key not correct")
 		logger.Warn("auth key wrong")
 		return
 	}
@@ -107,7 +107,7 @@ func handler(c *gin.Context) {
 	} else if c.Query("screen") != "" {
 		screen = c.Query("screen")
 	} else {
-		c.String(http.StatusBadRequest, "No screen name given.")
+		c.String(http.StatusBadRequest, "no screen name given")
 		logger.Warn("no screen name given")
 		return
 	}
@@ -119,7 +119,7 @@ func handler(c *gin.Context) {
 		command = c.Query("command")
 	} else {
 		logger.Warn("no command given")
-		c.String(http.StatusBadRequest, "No command given.")
+		c.String(http.StatusBadRequest, "no command given.")
 		return
 	}
 
@@ -144,7 +144,7 @@ func handler(c *gin.Context) {
 	})
 	if err != nil {
 		c.String(http.StatusInternalServerError, "failed to run command. error during post")
-		logger.Warn("failed to run command. error during post", zap.String("command", command), zap.String("screen", screen))
+		logger.Error("failed to run command. error during post", zap.String("command", command), zap.String("screen", screen), zap.Error(err))
 		return
 	}
 
@@ -154,8 +154,16 @@ func handler(c *gin.Context) {
 		return
 	}
 
+	body, err := ioutil.ReadAll(resp.Body)
+
 	c.String(http.StatusInternalServerError, "failed to run command, got bad response code")
-	logger.Warn("failed to run command, got bad response code", zap.String("command", command), zap.Int("respcode", resp.StatusCode), zap.String("screen", screen))
+	logger.Warn(
+		"failed to run command, got bad response code",
+		zap.String("command", command),
+		zap.Int("respcode", resp.StatusCode),
+		zap.String("screen", screen),
+		zap.String("body", string(body)),
+		zap.Error(err))
 	return
 }
 

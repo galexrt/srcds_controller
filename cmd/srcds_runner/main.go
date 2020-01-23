@@ -192,7 +192,7 @@ func main() {
 func cmdExecute(c *gin.Context) {
 	ok, err := checkACL(c.Request)
 	if err != nil {
-		c.String(http.StatusForbidden, "failed to check ACL")
+		c.String(http.StatusForbidden, fmt.Sprintf("permission denied. %+v", err))
 		return
 	}
 	if !ok {

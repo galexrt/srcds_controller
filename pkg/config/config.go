@@ -52,6 +52,13 @@ func (c *Config) Verify() error {
 		}
 	}
 
+	if c.Server.ACL == nil {
+		c.Server.ACL = &ACL{
+			Users:  []int{},
+			Groups: []int{},
+		}
+	}
+
 	return nil
 }
 

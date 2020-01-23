@@ -1,5 +1,6 @@
 go:
   version: 1.13
+  cgo: false
 repository:
     path: github.com/galexrt/srcds_controller
 build:
@@ -17,8 +18,6 @@ build:
           path: ./cmd/srcds_cmdrelay
         - name: srcds_controller
           path: ./cmd/srcds_controller
-        - name: srcds_runner
-          path: ./cmd/srcds_runner
 
 tarball:
     files:

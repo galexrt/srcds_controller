@@ -109,7 +109,7 @@ func checkPCREDAgainstACL(cred *unix.Ucred, acl *config.ACL) (bool, error) {
 	}
 
 	for _, u := range acl.Users {
-		if uint32(u) == cred.Uid {
+		if u == int(cred.Uid) {
 			return true, nil
 		}
 	}
@@ -136,5 +136,5 @@ func checkPCREDAgainstACL(cred *unix.Ucred, acl *config.ACL) (bool, error) {
 		}
 	}
 
-	return false, nil
+	return false, fmt.Errorf("request user (%s) / groups (%+v) did not match with ACL", userID, userGroups)
 }
