@@ -1,0 +1,12 @@
+general:
+  umask: 7
+cachet:
+  url: "" # YOUR_CACHET_URL
+  apiKey: "" # YOUR_CACHET_API_TOKEN
+docker:
+  image: "galexrt/srcds_controller:runner-latest"
+checks:
+  rcon:
+    timeout: 12s
+  actioreactio:
+    timeout: 5s

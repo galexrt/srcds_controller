@@ -148,7 +148,9 @@ func handleDockerEvent(event events.Message) error {
 				return fmt.Errorf("no cachet API token given")
 			}
 
-			cachetStartupIncident(cachetURL, cachetToken, componentID)
+			if err := cachetStartupIncident(cachetURL, cachetToken, componentID); err != nil {
+				return err
+			}
 		}
 	default:
 		log.WithField("event_action", eventAction).Debugf("docker event isn't of our concern (not of type 'die')")

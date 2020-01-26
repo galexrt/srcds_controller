@@ -10,7 +10,7 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.4.0 // indirect
+	github.com/docker/go-units v0.4.0
 	github.com/galexrt/go-rcon v0.0.0-20191004120034-77f90a2143f9
 	github.com/gdamore/tcell v1.3.0 // indirect
 	github.com/gin-gonic/gin v1.5.0
@@ -18,11 +18,13 @@ require (
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.8
 	github.com/json-iterator/go v1.1.9 // indirect
+	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pty v1.1.8
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.0.3 // indirect
 	github.com/marcusolsson/tui-go v0.4.0
+	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/mitchellh/go-homedir v1.1.0

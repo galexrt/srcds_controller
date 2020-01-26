@@ -18,20 +18,21 @@ package config
 
 import (
 	"fmt"
-	"sync"
 )
 
-// Cfg variable holding the global config object
-var Cfg *Config
+// Cfg variables holding the Config
+var (
+	Cfg *Config
+)
 
 // Config config file struct
 type Config struct {
-	sync.RWMutex
 	General *General             `yaml:"general"`
 	Docker  *Docker              `yaml:"docker"`
 	Server  *Server              `yaml:"server"`
 	Checker *Checker             `yaml:"checker"`
 	Checks  map[string]CheckOpts `yaml:"checks"`
+	Cachet  *Cachet              `yaml:"cachet"`
 }
 
 // Verify verify the config file
@@ -67,9 +68,16 @@ type General struct {
 	Umask int `yaml:"umask"`
 }
 
+// GlobalConfigPath default global config file path
+const GlobalConfigPath = "/etc/srcds_controller/config.yaml"
+
 // GlobalConfig global config file always read from `/etc/srcds_controller/config.yaml`
 type GlobalConfig struct {
-	Cachet *Cachet `yaml:"cachet"`
+	General *General             `yaml:"general"`
+	Cachet  *Cachet              `yaml:"cachet"`
+	Docker  *Docker              `yaml:"docker"`
+	Checker *Checker             `yaml:"checker"`
+	Checks  map[string]CheckOpts `yaml:"checks"`
 }
 
 // Cachet cachet integration config

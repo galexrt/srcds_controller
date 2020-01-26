@@ -1,5 +1,9 @@
 # Rewrite v0
 
+## Goals
+
+* Use UNIX sockets for easier authentication (by UID and GIDs of users)
+
 ## Architecture
 
 ```mermaid

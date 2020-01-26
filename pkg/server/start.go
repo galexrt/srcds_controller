@@ -26,6 +26,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-units"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -69,6 +70,7 @@ func Start(serverCfg *config.Config) error {
 			Image:       serverCfg.Docker.Image,
 			WorkingDir:  serverDir,
 		}
+
 		contHostCfg := &container.HostConfig{
 			RestartPolicy: container.RestartPolicy{
 				Name: "no",
@@ -118,6 +120,15 @@ func Start(serverCfg *config.Config) error {
 		}
 		if serverCfg.Server.Resources != nil {
 			contHostCfg.Resources = *serverCfg.Server.Resources
+		}
+
+		// Disable Core dumps for the containers. GMod and other games seem to
+		// do core dumps for random reasons but we don't need them
+		contHostCfg.Ulimits = []*units.Ulimit{
+			&units.Ulimit{
+				Name: "core",
+				Hard: 0,
+			},
 		}
 
 		netCfg := &network.NetworkingConfig{}

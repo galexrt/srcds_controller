@@ -31,26 +31,23 @@ const (
 	cachetUpIncidentMessage = `%s.`
 )
 
-func cachetStartupIncident(cachetURL string, cachetToken string, componentID int) {
+func cachetStartupIncident(cachetURL string, cachetToken string, componentID int) error {
 	client, err := cachet.NewClient(cachetURL, nil)
 	if err != nil {
-		log.Error("failed to create cachet API client")
-		return
+		return fmt.Errorf("failed to create cachet API client")
 	}
 	client.Authentication.SetTokenAuth(cachetToken)
 
 	pong, resp, err := client.General.Ping()
 	if err != nil {
-		log.Error("failed to ping cachet API")
-		return
+		return fmt.Errorf("failed to ping cachet API")
 	}
 
 	log.WithFields(logrus.Fields{"status": resp.Status, "response": pong}).Debug("cachet pinged sucessful")
 
 	component, _, err := client.Components.Get(componentID)
 	if err != nil {
-		log.Errorf("failed to get component (ID: %d) from cachet API. %+v", componentID, err)
-		return
+		return fmt.Errorf("failed to get component (ID: %d) from cachet API. %+v", componentID, err)
 	}
 
 	incidentResp, _, err := client.Incidents.GetAll(&cachet.IncidentsQueryParams{
@@ -58,8 +55,7 @@ func cachetStartupIncident(cachetURL string, cachetToken string, componentID int
 		Visible:     cachet.ComponentGroupVisibilityPublic,
 	})
 	if err != nil {
-		log.Errorf("failed to get incidents from cachet API. %+v", err)
-		return
+		return fmt.Errorf("failed to get incidents from cachet API. %+v", err)
 	}
 
 	if len(incidentResp.Incidents) > 0 {
@@ -72,12 +68,11 @@ func cachetStartupIncident(cachetURL string, cachetToken string, componentID int
 
 		updated, err := time.Parse("2020-01-08 21:38:45", incident.UpdatedAt)
 		if err != nil {
-			log.Errorf("failed to parse incident updated at time. %+v", err)
-			return
+			return fmt.Errorf("failed to parse incident updated at time. %+v", err)
 		}
 		// Don't spam the Status page with restarted messages
 		if time.Now().Add(1*time.Hour).Sub(updated) > 60*time.Minute {
-			return
+			return nil
 		}
 	}
 
@@ -91,7 +86,7 @@ func cachetStartupIncident(cachetURL string, cachetToken string, componentID int
 		Notify:          false,
 	}
 	if _, _, err := client.Incidents.Create(newIncident); err != nil {
-		log.Errorf("failed to create new incident. %+v", err)
-		return
+		return fmt.Errorf("failed to create new incident. %+v", err)
 	}
+	return nil
 }

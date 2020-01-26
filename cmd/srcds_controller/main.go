@@ -22,7 +22,10 @@ import (
 	"path"
 	"syscall"
 
+	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -30,13 +33,14 @@ import (
 )
 
 var (
-	cfgFile string
+	cfgFile       string
+	globalCfgFile string
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "srcds_controller",
-	Short: "Check if srcds servers are up and react on that.",
+	Short: "srcds_controller main unit.",
 }
 
 func main() {
@@ -61,7 +65,9 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.srcds_controller.yaml)")
+	rootCmd.PersistentFlags().StringVar(&globalCfgFile, "global-config", "", "global config file (default is "+config.GlobalConfigPath+")")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -70,32 +76,51 @@ func initConfig() {
 		// Get current work
 		home, err := homedir.Dir()
 		if err != nil {
-			log.Error(err)
-			os.Exit(2)
+			log.Fatal(err)
 		}
 		cfgFile = path.Join(home, ".srcds_controller.yaml")
 	}
 
-	config.Cfg = &config.Config{}
+	// Load global config
+	globalCfg := &config.GlobalConfig{}
+	if _, err := os.Stat(globalCfgFile); err == nil {
+		out, err := ioutil.ReadFile(globalCfgFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err = yaml.Unmarshal(out, globalCfg); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	userCfg := &userconfig.UserConfig{}
+	cfgs := &userconfig.Config{
+		Servers: map[string]*config.Config{},
+	}
 
 	if _, err := os.Stat(cfgFile); err == nil {
 		out, err := ioutil.ReadFile(cfgFile)
 		if err != nil {
-			log.Error(err)
-			os.Exit(2)
+			log.Fatal(err)
 		}
-		if err = yaml.Unmarshal(out, config.Cfg); err != nil {
-			log.Error(err)
-			os.Exit(2)
+		if err = yaml.Unmarshal(out, userCfg); err != nil {
+			log.Fatal(err)
 		}
-		if err = config.Cfg.Verify(); err != nil {
-			log.Error(err)
-			os.Exit(2)
+		if err = userCfg.Load(globalCfg, cfgs); err != nil {
+			log.Fatal(err)
 		}
-
-		syscall.Umask(config.Cfg.General.Umask)
 	} else {
-		log.Error("no config found in home dir nor specified by flag")
-		os.Exit(2)
+		log.Fatal("no config found in home dir nor specified by flag")
 	}
+
+	userconfig.Cfg = cfgs
+}
+
+func initDockerCli(cmd *cobra.Command, args []string) error {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+	server.DockerCli = cli
+	return err
 }

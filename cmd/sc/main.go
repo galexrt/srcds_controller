@@ -38,7 +38,8 @@ const (
 )
 
 var (
-	cfgFile string
+	cfgFile       string
+	globalCfgFile string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -68,7 +69,12 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.srcds_controller.yaml)")
+
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.srcds_controller.yaml)")
+	rootCmd.PersistentFlags().StringVar(&globalCfgFile, "global-config", "", "global config file (default is "+config.GlobalConfigPath+")")
+	rootCmd.PersistentFlags().BoolP(AllServers, "a", false, "If all servers should be used")
+
+	viper.BindPFlag(AllServers, rootCmd.PersistentFlags().Lookup(AllServers))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -81,6 +87,19 @@ func initConfig() {
 		}
 		cfgFile = path.Join(home, ".srcds_controller.yaml")
 	}
+
+	// Load global config
+	globalCfg := &config.GlobalConfig{}
+	if _, err := os.Stat(globalCfgFile); err == nil {
+		out, err := ioutil.ReadFile(globalCfgFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err = yaml.Unmarshal(out, globalCfg); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	userCfg := &userconfig.UserConfig{}
 	cfgs := &userconfig.Config{
 		Servers: map[string]*config.Config{},
@@ -94,7 +113,7 @@ func initConfig() {
 		if err = yaml.Unmarshal(out, userCfg); err != nil {
 			log.Fatal(err)
 		}
-		if err = userCfg.Load(cfgs); err != nil {
+		if err = userCfg.Load(globalCfg, cfgs); err != nil {
 			log.Fatal(err)
 		}
 	} else {
@@ -102,11 +121,6 @@ func initConfig() {
 	}
 
 	userconfig.Cfg = cfgs
-}
-
-func init() {
-	rootCmd.PersistentFlags().BoolP(AllServers, "a", false, "If all servers should be used")
-	viper.BindPFlag(AllServers, rootCmd.PersistentFlags().Lookup(AllServers))
 }
 
 func initDockerCli(cmd *cobra.Command, args []string) error {

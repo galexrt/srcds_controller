@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v2"
 )
 
@@ -43,7 +44,7 @@ type Config struct {
 }
 
 // Load load the configs into a Config object
-func (uc *UserConfig) Load(cfgs *Config) error {
+func (uc *UserConfig) Load(globalCfg *config.GlobalConfig, cfgs *Config) error {
 	configsToLoad := []string{}
 
 	for _, fPath := range uc.ServerDirectories {
@@ -65,23 +66,71 @@ func (uc *UserConfig) Load(cfgs *Config) error {
 			if err != nil {
 				return err
 			}
-			cfg := &config.Config{}
-			if err = yaml.Unmarshal(out, cfg); err != nil {
+			serverCfg := &config.Config{}
+			if err = yaml.Unmarshal(out, serverCfg); err != nil {
 				return err
 			}
-			if err = cfg.Verify(); err != nil {
+			if err = serverCfg.Verify(); err != nil {
 				return err
 			}
 
-			if cfg.Server.Name == "" {
+			if serverCfg.Server.Name == "" {
 				continue
 			}
 
-			cfg.Server.Path, _ = filepath.Split(confToLoad)
+			serverCfg.Server.Path, _ = filepath.Split(confToLoad)
 
-			cfgs.Servers[cfg.Server.Name] = cfg
+			if err := mergeGlobalWithServerCfg(globalCfg, serverCfg); err != nil {
+				return err
+			}
+
+			cfgs.Servers[serverCfg.Server.Name] = serverCfg
 		} else {
 			return fmt.Errorf("skipping config %s due to error", confToLoad)
+		}
+	}
+
+	return nil
+}
+
+func mergeGlobalWithServerCfg(globalCfg *config.GlobalConfig, cfg *config.Config) error {
+	if cfg.General == nil {
+		cfg.General = globalCfg.General
+	} else if globalCfg.General != nil {
+		if err := mergo.Merge(cfg.General, globalCfg.General); err != nil {
+			return err
+		}
+	}
+
+	if cfg.Docker == nil {
+		cfg.Docker = globalCfg.Docker
+	} else if globalCfg.Docker != nil {
+		if err := mergo.Merge(cfg.Docker, globalCfg.Docker); err != nil {
+			return err
+		}
+	}
+
+	if cfg.Checker == nil {
+		cfg.Checker = globalCfg.Checker
+	} else if globalCfg.Checker != nil {
+		if err := mergo.Merge(cfg.Checker, globalCfg.Checker); err != nil {
+			return err
+		}
+	}
+
+	if cfg.Checks == nil {
+		cfg.Checks = globalCfg.Checks
+	} else if globalCfg.Checks != nil {
+		if err := mergo.Map(&cfg.Checks, globalCfg.Checks); err != nil {
+			return err
+		}
+	}
+
+	if cfg.Cachet == nil {
+		cfg.Cachet = globalCfg.Cachet
+	} else if globalCfg.Cachet != nil {
+		if err := mergo.Merge(&cfg.Cachet, globalCfg.Cachet); err != nil {
+			return err
 		}
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -20,15 +21,16 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	yaml "gopkg.in/yaml.v2"
 )
 
 var (
-	cfgMutex = &sync.Mutex{}
-	home     string
-	logger   *zap.Logger
-	rootCmd  = &cobra.Command{
+	cfgFile       string
+	globalCfgFile string
+	cfgMutex      = &sync.Mutex{}
+	home          string
+	logger        *zap.Logger
+	rootCmd       = &cobra.Command{
 		Use:   "srcds_cmdrelay",
 		Short: "",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -69,12 +71,21 @@ var (
 )
 
 func init() {
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.srcds_controller.yaml)")
+	rootCmd.PersistentFlags().StringVar(&globalCfgFile, "global-config", "", "global config file (default is "+config.GlobalConfigPath+")")
 	rootCmd.PersistentFlags().String("listen-address", "127.0.0.1:8181", "Listen address")
-	rootCmd.PersistentFlags().String("config", "", "Config file path")
 	rootCmd.PersistentFlags().StringSlice("auth-key", []string{}, "Auth key(s) used for authentication to the cmd relay")
 	viper.BindPFlag("listen-address", rootCmd.PersistentFlags().Lookup("listen-address"))
-	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag("auth-key", rootCmd.PersistentFlags().Lookup("auth-key"))
+}
+
+func main() {
+	syscall.Umask(7)
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func handler(c *gin.Context) {
@@ -167,26 +178,29 @@ func handler(c *gin.Context) {
 	return
 }
 
-func main() {
-	syscall.Umask(7)
-
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	cfgFile := viper.GetString("config")
 	if cfgFile == "" {
 		// Get current work
 		home, err := homedir.Dir()
 		if err != nil {
-			logger.Fatal("failed to get home dir", zapcore.Field{Key: "error", Interface: err})
+			log.Fatal(err)
 		}
 		cfgFile = path.Join(home, ".srcds_controller.yaml")
 	}
+
+	// Load global config
+	globalCfg := &config.GlobalConfig{}
+	if _, err := os.Stat(globalCfgFile); err == nil {
+		out, err := ioutil.ReadFile(globalCfgFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err = yaml.Unmarshal(out, globalCfg); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	userCfg := &userconfig.UserConfig{}
 	cfgs := &userconfig.Config{
 		Servers: map[string]*config.Config{},
@@ -195,16 +209,16 @@ func initConfig() {
 	if _, err := os.Stat(cfgFile); err == nil {
 		out, err := ioutil.ReadFile(cfgFile)
 		if err != nil {
-			logger.Fatal(fmt.Sprintf("failed to read userconfig dir from %s", cfgFile), zapcore.Field{Key: "error", Interface: err})
+			log.Fatal(err)
 		}
 		if err = yaml.Unmarshal(out, userCfg); err != nil {
-			logger.Fatal("failed to unmarshal userconfig", zapcore.Field{Key: "error", Interface: err})
+			log.Fatal(err)
 		}
-		if err = userCfg.Load(cfgs); err != nil {
-			logger.Fatal("failed to load configs from userconfig", zap.Error(err))
+		if err = userCfg.Load(globalCfg, cfgs); err != nil {
+			log.Fatal(err)
 		}
 	} else {
-		logger.Fatal("no config found in home dir nor specified by flag")
+		log.Fatal("no config found in home dir nor specified by flag")
 	}
 
 	userconfig.Cfg = cfgs
