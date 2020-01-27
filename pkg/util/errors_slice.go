@@ -16,8 +16,11 @@ limitations under the License.
 
 package util
 
-import "sync"
+import (
+	"sync"
+)
 
+// Errors
 type Errors struct {
 	sync.Mutex
 	Errs []error

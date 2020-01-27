@@ -72,9 +72,10 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.srcds_controller.yaml)")
-	rootCmd.PersistentFlags().StringVar(&globalCfgFile, "global-config", "", "global config file (default is "+config.GlobalConfigPath+")")
+	rootCmd.PersistentFlags().StringVar(&globalCfgFile, "global-config", config.GlobalConfigPath, "global config file (default is "+config.GlobalConfigPath+")")
 	rootCmd.PersistentFlags().String("listen-address", "127.0.0.1:8181", "Listen address")
 	rootCmd.PersistentFlags().StringSlice("auth-key", []string{}, "Auth key(s) used for authentication to the cmd relay")
+
 	viper.BindPFlag("listen-address", rootCmd.PersistentFlags().Lookup("listen-address"))
 	viper.BindPFlag("auth-key", rootCmd.PersistentFlags().Lookup("auth-key"))
 }

@@ -18,6 +18,8 @@ package config
 
 import (
 	"fmt"
+
+	"github.com/galexrt/srcds_controller/pkg/util"
 )
 
 // Cfg variables holding the Config
@@ -46,10 +48,22 @@ func (c *Config) Verify() error {
 	if c.Server == nil {
 		return fmt.Errorf("no server config found")
 	}
+
+	if c.Server.Command == "" {
+		c.Server.Command = "./srcds_run"
+	}
+
 	if c.Docker == nil {
 		c.Docker = &Docker{
-			Image:      "galexrt/srcds_controller:runner-latest",
+			Image:      util.StringPointer("galexrt/srcds_controller:runner-latest"),
 			NamePrefix: "game-",
+		}
+	} else {
+		if c.Docker.Image == nil {
+			c.Docker.Image = util.StringPointer("galexrt/srcds_controller:runner-latest")
+		}
+		if c.Docker.NamePrefix == "" {
+			c.Docker.NamePrefix = "game-"
 		}
 	}
 

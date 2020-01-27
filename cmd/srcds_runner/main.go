@@ -79,7 +79,7 @@ func main() {
 	syscall.Umask(config.Cfg.General.Umask)
 
 	contArgs := strslice.StrSlice{
-		"./srcds_run",
+		config.Cfg.Server.Command,
 		"-port",
 		strconv.Itoa(config.Cfg.Server.Port),
 	}
@@ -90,7 +90,7 @@ func main() {
 	}
 	cfgMutex.Unlock()
 
-	logger.Infof("starting srcds_runner on %s with following args: %+v", ListenAddress, contArgs)
+	logger.Infof("starting srcds_runner on socket with following cmd and args: %+v", contArgs)
 
 	if len(contArgs) < 2 {
 		logger.Fatal("not enough arguments for server must have at least 2")

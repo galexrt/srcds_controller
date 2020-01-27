@@ -78,7 +78,7 @@ var serverConsoleCmd = &cobra.Command{
 			}
 			for _, serverCfg := range servers {
 				if err := server.SendCommand(serverCfg, []string{command}); err != nil {
-					outChan <- fmt.Sprintf("\n=> SC CONSOLE ERROR: %+v\n\n", err)
+					outChan <- fmt.Sprintf("\n=> SC CONSOLE ERROR BEGIN\n%+v\n=> SC CONSOLE ERROR END\n", err)
 				}
 			}
 			historyStore.Add(command)
@@ -132,7 +132,7 @@ var serverConsoleCmd = &cobra.Command{
 			}
 			if stdout == nil || stderr == nil {
 				ui.Quit()
-				return fmt.Errorf("server.Logs returned nil body. something is wrong. %+v", err)
+				return fmt.Errorf("unable to get server container logs. server.Logs returned nil body. %+v", err)
 			}
 
 			go func(serverName string) {

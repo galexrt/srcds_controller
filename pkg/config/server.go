@@ -30,6 +30,7 @@ type Server struct {
 	Address       string               `yaml:"address"`
 	Port          int                  `yaml:"port"`
 	MountsDir     string               `yaml:"mountsDir"`
+	Command       string               `yaml:"command"`
 	Flags         []string             `yaml:"flags"`
 	RCON          RCON                 `yaml:"rcon"`
 	Checks        []Check              `yaml:"checks"`

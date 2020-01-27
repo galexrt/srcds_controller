@@ -29,7 +29,6 @@ import (
 	// Import checks
 	_ "github.com/galexrt/srcds_controller/pkg/checks/actioreactio"
 	_ "github.com/galexrt/srcds_controller/pkg/checks/rcon"
-	"github.com/galexrt/srcds_controller/pkg/config"
 
 	"github.com/galexrt/srcds_controller/pkg/checker"
 )
@@ -69,15 +68,15 @@ var checkerCmd = &cobra.Command{
 }
 
 func init() {
-	checkerCmd.PersistentFlags().StringP("config", "c", config.GlobalConfigPath, "global config file location")
 	checkerCmd.PersistentFlags().Bool("dry-run", true, "dry run mode")
 	checkerCmd.PersistentFlags().String("log-level", "INFO", "log level")
 	checkerCmd.PersistentFlags().String("cachet-url", "", "Cachet Status page API v1 URL")
 	checkerCmd.PersistentFlags().String("cachet-token", "", "Cachet Status page API token")
-	viper.BindPFlag("config", checkerCmd.Flags().Lookup("config"))
+
 	viper.BindPFlag("dry-run", checkerCmd.Flags().Lookup("dry-run"))
 	viper.BindPFlag("log-level", checkerCmd.Flags().Lookup("log-level"))
 	viper.BindPFlag("cachet-url", checkerCmd.Flags().Lookup("cachet-url"))
 	viper.BindPFlag("cachet-token", checkerCmd.Flags().Lookup("cachet-token"))
+
 	rootCmd.AddCommand(checkerCmd)
 }

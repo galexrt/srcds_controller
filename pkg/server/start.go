@@ -67,7 +67,7 @@ func Start(serverCfg *config.Config) error {
 			OpenStdin:   true,
 			Hostname:    hostname,
 			User:        fmt.Sprintf("%d:%d", serverCfg.Server.RunOptions.UID, serverCfg.Server.RunOptions.GID),
-			Image:       serverCfg.Docker.Image,
+			Image:       *serverCfg.Docker.Image,
 			WorkingDir:  serverDir,
 		}
 

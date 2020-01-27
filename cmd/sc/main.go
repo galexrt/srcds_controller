@@ -71,7 +71,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.srcds_controller.yaml)")
-	rootCmd.PersistentFlags().StringVar(&globalCfgFile, "global-config", "", "global config file (default is "+config.GlobalConfigPath+")")
+	rootCmd.PersistentFlags().StringVar(&globalCfgFile, "global-config", config.GlobalConfigPath, "global config file (default is "+config.GlobalConfigPath+")")
 	rootCmd.PersistentFlags().BoolP(AllServers, "a", false, "If all servers should be used")
 
 	viper.BindPFlag(AllServers, rootCmd.PersistentFlags().Lookup(AllServers))

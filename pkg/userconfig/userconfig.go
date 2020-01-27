@@ -30,7 +30,9 @@ import (
 )
 
 // Cfg variable holding the config object
-var Cfg *Config
+var (
+	Cfg *Config
+)
 
 // UserConfig user config pointing at a list of globs to server directories
 type UserConfig struct {
@@ -129,7 +131,7 @@ func mergeGlobalWithServerCfg(globalCfg *config.GlobalConfig, cfg *config.Config
 	if cfg.Cachet == nil {
 		cfg.Cachet = globalCfg.Cachet
 	} else if globalCfg.Cachet != nil {
-		if err := mergo.Merge(&cfg.Cachet, globalCfg.Cachet); err != nil {
+		if err := mergo.Merge(cfg.Cachet, globalCfg.Cachet); err != nil {
 			return err
 		}
 	}

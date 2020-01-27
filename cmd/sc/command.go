@@ -24,6 +24,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverCommandCmd represents the stop command
@@ -41,9 +42,15 @@ var serverCommandCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cmdArgs := args[0:]
-		if len(args) > 0 {
+
+		var cmdArgs []string
+		if len(args) > 1 {
 			cmdArgs = args[1:]
+		} else {
+			cmdArgs = args[0:]
+		}
+		if viper.GetBool("all") {
+			cmdArgs = args[0:]
 		}
 
 		errorOccured := false

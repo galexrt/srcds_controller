@@ -9,12 +9,16 @@ import (
 	"os"
 	"os/user"
 	"strconv"
+	"sync"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"golang.org/x/sys/unix"
 )
 
-var conns = make(map[string]net.Conn)
+var (
+	connsMutex = &sync.Mutex{}
+	conns      = make(map[string]net.Conn)
+)
 
 type connSaveListener struct {
 	net.Listener
@@ -28,18 +32,24 @@ func NewConnSaveListener(wrap net.Listener) net.Listener {
 func (csl connSaveListener) Accept() (net.Conn, error) {
 	conn, err := csl.Listener.Accept()
 	ptrStr := fmt.Sprintf("%d", &conn)
+	connsMutex.Lock()
 	conns[ptrStr] = conn
+	connsMutex.Unlock()
 	return remoteAddrPtrConn{conn, ptrStr}, err
 }
 
 // GetConn
 func GetConn(r *http.Request) net.Conn {
+	connsMutex.Lock()
+	defer connsMutex.Unlock()
 	return conns[r.RemoteAddr]
 }
 
 // ConnStateEvent
 func ConnStateEvent(conn net.Conn, event http.ConnState) {
 	if event == http.StateHijacked || event == http.StateClosed {
+		connsMutex.Lock()
+		defer connsMutex.Unlock()
 		delete(conns, conn.RemoteAddr().String())
 	}
 }
