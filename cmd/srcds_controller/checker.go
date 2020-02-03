@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/viper"
 
 	// Import checks
+	"github.com/galexrt/go-rcon"
 	_ "github.com/galexrt/srcds_controller/pkg/checks/actioreactio"
 	_ "github.com/galexrt/srcds_controller/pkg/checks/rcon"
 
@@ -46,7 +47,9 @@ var checkerCmd = &cobra.Command{
 			return err
 		}
 		log.SetLevel(level)
-		//rcon.SetLog(log.WithField("pkg", "go-rcon").Logger)
+		if viper.GetBool("debug") {
+			rcon.SetLog(log.WithField("pkg", "go-rcon").Logger)
+		}
 
 		stopCh := make(chan struct{})
 		sigCh := make(chan os.Signal)
@@ -63,6 +66,7 @@ var checkerCmd = &cobra.Command{
 		<-sigCh
 		close(stopCh)
 		wg.Wait()
+
 		return nil
 	},
 }
@@ -70,13 +74,15 @@ var checkerCmd = &cobra.Command{
 func init() {
 	checkerCmd.PersistentFlags().Bool("dry-run", true, "dry run mode")
 	checkerCmd.PersistentFlags().String("log-level", "INFO", "log level")
+	checkerCmd.PersistentFlags().Bool("debug", false, "debug mode")
 	checkerCmd.PersistentFlags().String("cachet-url", "", "Cachet Status page API v1 URL")
 	checkerCmd.PersistentFlags().String("cachet-token", "", "Cachet Status page API token")
 
-	viper.BindPFlag("dry-run", checkerCmd.Flags().Lookup("dry-run"))
-	viper.BindPFlag("log-level", checkerCmd.Flags().Lookup("log-level"))
-	viper.BindPFlag("cachet-url", checkerCmd.Flags().Lookup("cachet-url"))
-	viper.BindPFlag("cachet-token", checkerCmd.Flags().Lookup("cachet-token"))
+	viper.BindPFlag("dry-run", checkerCmd.PersistentFlags().Lookup("dry-run"))
+	viper.BindPFlag("log-level", checkerCmd.PersistentFlags().Lookup("log-level"))
+	viper.BindPFlag("debug", checkerCmd.PersistentFlags().Lookup("debug"))
+	viper.BindPFlag("cachet-url", checkerCmd.PersistentFlags().Lookup("cachet-url"))
+	viper.BindPFlag("cachet-token", checkerCmd.PersistentFlags().Lookup("cachet-token"))
 
 	rootCmd.AddCommand(checkerCmd)
 }

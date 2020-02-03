@@ -21,12 +21,20 @@ import (
 	"context"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/checks"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
+	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	defaultOpts = map[string]string{
+		"timeout": "10s",
+	}
 )
 
 func init() {
@@ -35,21 +43,18 @@ func init() {
 
 // Run run a actioreactio check on a config.Server
 func Run(check config.Check, srv *config.Config) bool {
-	// TODO Run command by Console and check the logs for time X if there is an appropriate response in it
+	if err := mergo.Map(&check.Opts, defaultOpts); err != nil {
+		log.Fatalf("failed to merge checks opts and rcon check defaults %s", srv.Server.Name)
+	}
 
-	stdout, stderr, err := server.Logs(srv, 0*time.Second, 0, true)
+	stdout, _, err := server.Logs(srv, 0*time.Second, 1, true)
 	if err != nil {
 		log.Errorf("error while getting logs from server. %+v", err)
 		return false
 	}
 	defer stdout.Close()
-	defer stderr.Close()
 
-	timeout, ok := check.Opts["timeout"]
-	if !ok {
-		timeout = "5s"
-	}
-	timeoutDuration, err := time.ParseDuration(timeout)
+	timeoutDuration, err := time.ParseDuration(check.Opts["timeout"])
 	if err != nil {
 		log.Errorf("failed to parse actioreactio timeout check opts. %+v", err)
 		return false
@@ -58,16 +63,18 @@ func Run(check config.Check, srv *config.Config) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 
+	wg := sync.WaitGroup{}
 	foundInfo := make(chan bool)
+	defer close(foundInfo)
+
+	wg.Add(1)
 	go func() {
-		foundInfo <- checkStreamForString(ctx, stdout, `Unknown command "srcsd_controller_check"`)
-	}()
-	go func() {
-		foundInfo <- checkStreamForString(ctx, stderr, `Unknown command "srcsd_controller_check"`)
+		defer wg.Done()
+		foundInfo <- checkStreamForString(ctx, stdout, `Unknown command "srcds_controller_check"`)
 	}()
 
 	if err := server.SendCommand(srv, []string{
-		"srcds_controller_check",
+		"\nsrcds_controller_check",
 	}); err != nil {
 		log.Errorf("error while sending actioreactio command to server. %+v", err)
 		return false
@@ -76,12 +83,13 @@ func Run(check config.Check, srv *config.Config) bool {
 	for {
 		select {
 		case <-ctx.Done():
+			if err := ctx.Err(); err != nil {
+				log.Errorf("ctx error in actioreactio check timeout. %+v", err)
+			}
 			return false
 		case found := <-foundInfo:
-			if found {
-				close(foundInfo)
-				return true
-			}
+			wg.Wait()
+			return found
 		}
 	}
 }

@@ -32,6 +32,8 @@ import (
 const (
 	// AnnounceEveryMinute const for the announce every minute value
 	AnnounceEveryMinute = "EVERY_MINUTE"
+	// AnnounceEverySecond const for the announce every second value
+	AnnounceEverySecond = "EVERY_SECOND"
 )
 
 // serverToolsNiceRestart represents the stop command
@@ -49,21 +51,6 @@ var serverToolsNiceRestart = &cobra.Command{
 
 		errorOccured := false
 
-		sendCommandInParallel := func(command string) {
-			wg := sync.WaitGroup{}
-			for _, serverCfg := range servers {
-				wg.Add(1)
-				go func(cfg *config.Config) {
-					defer wg.Done()
-					if err := server.SendCommand(cfg, []string{command}); err != nil {
-						log.Errorf("%+v", err)
-						errorOccured = true
-					}
-				}(serverCfg)
-			}
-			wg.Wait()
-		}
-
 		rawAnnounceTimes := viper.GetStringSlice("default-announce-times")
 		for _, a := range viper.GetStringSlice("additional-announce-times") {
 			rawAnnounceTimes = append(rawAnnounceTimes, a)
@@ -73,10 +60,13 @@ var serverToolsNiceRestart = &cobra.Command{
 		secsRemaining := secsTotal
 
 		byMinuteAnnouncement := false
+		bySecondsAnnouncement := false
 		var announceTimes []string
 		for _, value := range rawAnnounceTimes {
 			if value == AnnounceEveryMinute {
 				byMinuteAnnouncement = true
+			} else if value == AnnounceEverySecond {
+				bySecondsAnnouncement = true
 			}
 			if value != "" {
 				announceTimes = append(announceTimes, value)
@@ -130,11 +120,14 @@ var serverToolsNiceRestart = &cobra.Command{
 			if byMinuteAnnouncement && mins == float64(int64(mins)) {
 				log.Info("countdown: another minute is over")
 				command := fmt.Sprintf(viper.GetString("announce-minutes"), int64(mins))
-				sendCommandInParallel(command)
+				sendCommandInParallel(servers, command)
 			} else if contains(announceTimes, strconv.Itoa(secsRemaining)) {
 				log.Debug("countdown: need to announce")
 				command := fmt.Sprintf(viper.GetString("announce-seconds"), int64(secsRemaining))
-				sendCommandInParallel(command)
+				sendCommandInParallel(servers, command)
+			} else if bySecondsAnnouncement {
+				command := fmt.Sprintf(viper.GetString("announce-seconds"), int64(secsRemaining))
+				sendCommandInParallel(servers, command)
 			}
 			if timeLoggerCoolDown == 15 || timeLoggerCoolDown == 0 {
 				log.Infof("countdown: remaining: %d seconds, total: %d seconds", secsRemaining, secsTotal)
@@ -170,4 +163,21 @@ func init() {
 	viper.BindPFlag("remove", serverToolsNiceRestart.PersistentFlags().Lookup("remove"))
 
 	serverToolsCmd.AddCommand(serverToolsNiceRestart)
+}
+
+func sendCommandInParallel(servers []*config.Config, command string) bool {
+	errorOccured := false
+	wg := sync.WaitGroup{}
+	for _, serverCfg := range servers {
+		wg.Add(1)
+		go func(cfg *config.Config) {
+			defer wg.Done()
+			if err := server.SendCommand(cfg, []string{command}); err != nil {
+				log.Errorf("error while sending command to server %s. %+v", cfg.Server.Name, err)
+				errorOccured = true
+			}
+		}(serverCfg)
+	}
+	wg.Wait()
+	return errorOccured
 }

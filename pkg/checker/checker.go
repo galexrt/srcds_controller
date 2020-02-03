@@ -87,8 +87,8 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 							Return: checks.Checks[check.Name](check, server),
 						}
 
-						splayTime := calculateTimeSplay(config.Cfg.Checker.Splay.Start, config.Cfg.Checker.Splay.End)
-						waitTime := config.Cfg.Checker.Interval + splayTime
+						splayTime := calculateTimeSplay(server.Checker.Splay.Start, server.Checker.Splay.End)
+						waitTime := server.Checker.Interval + splayTime
 						log.Debugf("waitTime: %s, splayTime: %s", waitTime, splayTime)
 
 						select {

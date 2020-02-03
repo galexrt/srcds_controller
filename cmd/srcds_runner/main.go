@@ -49,6 +49,11 @@ const (
 	ConfigFileName = ".srcds_controller_server.yaml"
 )
 
+type outputFilter struct {
+	sync.Mutex
+	Block bool
+}
+
 var (
 	logger       *zap.SugaredLogger
 	cfgMutex     = &sync.Mutex{}
@@ -56,6 +61,7 @@ var (
 	tty          *os.File
 	out          io.Reader
 	consoleMutex sync.Mutex
+	outFilter    = outputFilter{}
 )
 
 func main() {
@@ -227,10 +233,14 @@ func copyLogs(r io.Reader) error {
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
+			outLine := stripansi.Strip(
+				string(buf[0:n]),
+			)
+			if skipOutputLine(outLine) {
+				continue
+			}
 			os.Stdout.Write([]byte(
-				stripansi.Strip(
-					string(buf[0:n]),
-				),
+				outLine,
 			),
 			)
 		}
@@ -271,11 +281,14 @@ func reconciliation(stopCh chan struct{}) {
 			consoleMutex.Lock()
 			func() {
 				defer consoleMutex.Unlock()
+				outFilter.Lock()
+				outFilter.Block = true
 				if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", serverCfg.RCON.Password))); err != nil {
 					logger.Errorf("failed to write rcon_password command to server console. %+v", err)
 				}
+				outFilter.Block = false
+				outFilter.Unlock()
 			}()
-
 		}
 		select {
 		case <-time.After(5 * time.Minute):
@@ -301,4 +314,18 @@ func listenAndServe(r *gin.Engine) {
 		ConnState: ConnStateEvent,
 	}
 	server.Serve(NewConnSaveListener(l))
+}
+
+func skipOutputLine(in string) bool {
+	if strings.Contains(in, "srcds_controller_check") {
+		return true
+	}
+
+	outFilter.Lock()
+	defer outFilter.Unlock()
+	if outFilter.Block {
+		return true
+	}
+
+	return false
 }

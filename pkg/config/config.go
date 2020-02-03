@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/util"
 )
@@ -71,6 +72,20 @@ func (c *Config) Verify() error {
 		c.Server.ACL = &ACL{
 			Users:  []int{},
 			Groups: []int{},
+		}
+	}
+
+	if c.Checker == nil {
+		c.Checker = &Checker{
+			Interval: 30 * time.Second,
+			Splay: Splay{
+				Start: 0,
+				End:   20,
+			},
+		}
+	} else {
+		if c.Checker.Interval == 0 {
+			c.Checker.Interval = 30 * time.Second
 		}
 	}
 

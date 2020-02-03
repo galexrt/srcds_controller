@@ -52,8 +52,16 @@ func Logs(serverCfg *config.Config, since time.Duration, tail int, follow bool) 
 
 	cmd := exec.Command("docker", args...)
 
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get stdout logs. %+v", err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get stderr logs. %+v", err)
+	}
+
 	if err := cmd.Start(); err != nil {
 		return nil, nil, err
 	}

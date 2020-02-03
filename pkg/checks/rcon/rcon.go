@@ -27,25 +27,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var defaultOpts = map[string]string{
+	"timeout": "30s",
+}
+
 func init() {
 	checks.Checks["rcon"] = Run
 }
 
 // Run run a rcon check on a config.Server
 func Run(check config.Check, server *config.Config) bool {
-	rconCfg, ok := config.Cfg.Checks["rcon"]
-	if !ok {
-		rconCfg = map[string]string{}
-	}
-	if err := mergo.Map(&rconCfg, check.Opts); err != nil {
-		log.Fatalf("failed to merge checks config and checks opts from server %s", server.Server.Name)
+	if err := mergo.Map(&check.Opts, defaultOpts); err != nil {
+		log.Fatalf("failed to merge checks opts and rcon check defaults %s", server.Server.Name)
 	}
 
 	log.Debugf("connecting to server %s using RCON", server.Server.Name)
 	port := strconv.Itoa(server.Server.Port)
 	con, err := rcon.Connect(net.JoinHostPort(server.Server.Address, port), &rcon.ConnectOptions{
 		RCONPassword: server.Server.RCON.Password,
-		Timeout:      rconCfg["timeout"],
+		Timeout:      check.Opts["timeout"],
 	})
 	if err != nil {
 		log.Errorf("error connecting to server %s using RCON. %+v", server.Server.Name, err)

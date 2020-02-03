@@ -26,6 +26,8 @@ var serverListCmd = &cobra.Command{
 	Use: "list",
 	Aliases: []string{
 		"ls",
+		"l",
+		"ps",
 	},
 	Short:             "Show list of one or more servers",
 	PersistentPreRunE: initDockerCli,
