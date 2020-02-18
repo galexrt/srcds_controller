@@ -1,79 +1,32 @@
-// Code taken from https://stackoverflow.com/a/55329317 by Paul Donohue
+/*
+Copyright 2020 Alexander Trost <galexrt@googlemail.com>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package main
 
 import (
-	"fmt"
+	"context"
+	"log"
 	"net"
 	"net/http"
 	"os"
-	"os/user"
-	"strconv"
-	"sync"
 
-	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )
-
-var (
-	connsMutex = &sync.Mutex{}
-	conns      = make(map[string]net.Conn)
-)
-
-type connSaveListener struct {
-	net.Listener
-}
-
-// NewConnSaveListener
-func NewConnSaveListener(wrap net.Listener) net.Listener {
-	return connSaveListener{wrap}
-}
-
-func (csl connSaveListener) Accept() (net.Conn, error) {
-	conn, err := csl.Listener.Accept()
-	ptrStr := fmt.Sprintf("%d", &conn)
-	connsMutex.Lock()
-	conns[ptrStr] = conn
-	connsMutex.Unlock()
-	return remoteAddrPtrConn{conn, ptrStr}, err
-}
-
-// GetConn
-func GetConn(r *http.Request) net.Conn {
-	connsMutex.Lock()
-	defer connsMutex.Unlock()
-	return conns[r.RemoteAddr]
-}
-
-// ConnStateEvent
-func ConnStateEvent(conn net.Conn, event http.ConnState) {
-	if event == http.StateHijacked || event == http.StateClosed {
-		connsMutex.Lock()
-		defer connsMutex.Unlock()
-		delete(conns, conn.RemoteAddr().String())
-	}
-}
-
-type remoteAddrPtrConn struct {
-	net.Conn
-	ptrStr string
-}
-
-func (rapc remoteAddrPtrConn) RemoteAddr() net.Addr {
-	return remoteAddrPtr{rapc.ptrStr}
-}
-
-type remoteAddrPtr struct {
-	ptrStr string
-}
-
-func (remoteAddrPtr) Network() string {
-	return ""
-}
-
-func (rap remoteAddrPtr) String() string {
-	return rap.ptrStr
-}
 
 // NewUnixListener create a new unix socket listener
 func NewUnixListener(path string) (net.Listener, error) {
@@ -94,57 +47,43 @@ func NewUnixListener(path string) (net.Listener, error) {
 	return l, nil
 }
 
-func checkACL(r *http.Request) (bool, error) {
-	conn := GetConn(r)
-	if unixConn, isUnix := conn.(*net.UnixConn); isUnix {
-		f, err := unixConn.File()
-		if err != nil {
-			return false, err
-		}
-		defer f.Close()
+// Code taken from https://stackoverflow.com/a/55329317 by Paul Donohue
+// Thanks for this code snippet!
 
-		pcred, err := unix.GetsockoptUcred(int(f.Fd()), unix.SOL_SOCKET, unix.SO_PEERCRED)
-		if err != nil {
-			return false, err
-		}
-
-		return checkPCREDAgainstACL(pcred, config.Cfg.Server.ACL)
-	}
-	return false, nil
+type contextKey struct {
+	key string
 }
 
-func checkPCREDAgainstACL(cred *unix.Ucred, acl *config.ACL) (bool, error) {
-	if acl == nil {
-		return false, fmt.Errorf("no ACLs found, disallowing any access")
-	}
+// ConnContextKey context key name for saving the connection in the request context
+var ConnContextKey = &contextKey{"http-conn"}
 
-	for _, u := range acl.Users {
-		if u == int(cred.Uid) {
-			return true, nil
-		}
-	}
+// SaveConnInContext save connection in the context function for http.Server.ConnContext
+func SaveConnInContext(ctx context.Context, c net.Conn) context.Context {
+	return context.WithValue(ctx, ConnContextKey, c)
+}
 
-	// Convert user ID to string
-	userID := strconv.FormatUint(uint64(cred.Uid), 10)
+// GetConn get http connection for request
+func GetConn(r *http.Request) net.Conn {
+	return r.Context().Value(ConnContextKey).(net.Conn)
+}
 
-	// Get Linux user groups
-	userInfo, err := user.LookupId(userID)
+func listenAndServe(r *gin.Engine) {
+	// Make sure no stale sockets present
+	os.Remove(ListenAddress)
+
+	http.HandleFunc("/", r.ServeHTTP)
+
+	l, err := NewUnixListener(ListenAddress)
 	if err != nil {
-		return false, err
+		log.Fatal(err)
 	}
-	userGroups, err := userInfo.GroupIds()
-	if err != nil {
-		return false, err
-	}
+	defer os.Remove(ListenAddress)
 
-	for _, g := range acl.Groups {
-		aclG := strconv.Itoa(g)
-		for _, ug := range userGroups {
-			if aclG == ug {
-				return true, nil
-			}
-		}
+	server := http.Server{
+		ConnContext: SaveConnInContext,
 	}
-
-	return false, fmt.Errorf("request user (%s) / groups (%+v) did not match with ACL", userID, userGroups)
+	if err := server.Serve(l); err != nil {
+		logger.Error(errors.Wrap(err, "error during http serve"))
+		return
+	}
 }

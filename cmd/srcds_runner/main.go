@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Alexander Trost <galexrt@googlemail.com>
+Copyright 2020 Alexander Trost <galexrt@googlemail.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -296,24 +295,6 @@ func reconciliation(stopCh chan struct{}) {
 			return
 		}
 	}
-}
-
-func listenAndServe(r *gin.Engine) {
-	// Make sure no stale sockets present
-	os.Remove(ListenAddress)
-
-	http.HandleFunc("/", r.ServeHTTP)
-
-	l, err := NewUnixListener(ListenAddress)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.Remove(ListenAddress)
-
-	server := http.Server{
-		ConnState: ConnStateEvent,
-	}
-	server.Serve(NewConnSaveListener(l))
 }
 
 func skipOutputLine(in string) bool {

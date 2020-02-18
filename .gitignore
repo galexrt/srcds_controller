@@ -36,6 +36,7 @@ srcds_runner
 !srcds_runner/
 .srcds_controller.yaml
 .srcds_controller_server.yaml
+.srcds_runner.sock
 
 vendor.orig/
 .build/
