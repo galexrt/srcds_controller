@@ -59,6 +59,9 @@ promu:
 		GO111MODULE=off \
 		$(GO) get -u github.com/prometheus/promu
 
+docker:
+	docker build -t galexrt/srcds_controller:runner-latest .
+
 style:
 	@echo ">> checking code style"
 	@! gofmt -d $(shell find . -path ./vendor -prune -o -name '*.go' -print) | grep '^'
