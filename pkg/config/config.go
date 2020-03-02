@@ -35,7 +35,6 @@ type Config struct {
 	Server  *Server              `yaml:"server"`
 	Checker *Checker             `yaml:"checker"`
 	Checks  map[string]CheckOpts `yaml:"checks"`
-	Cachet  *Cachet              `yaml:"cachet"`
 }
 
 // Verify verify the config file
@@ -103,14 +102,7 @@ const GlobalConfigPath = "/etc/srcds_controller/config.yaml"
 // GlobalConfig global config file always read from `/etc/srcds_controller/config.yaml`
 type GlobalConfig struct {
 	General *General             `yaml:"general"`
-	Cachet  *Cachet              `yaml:"cachet"`
 	Docker  *Docker              `yaml:"docker"`
 	Checker *Checker             `yaml:"checker"`
 	Checks  map[string]CheckOpts `yaml:"checks"`
-}
-
-// Cachet cachet integration config
-type Cachet struct {
-	URL    string `yaml:"url"`
-	APIKey string `yaml:"apiKey"`
 }

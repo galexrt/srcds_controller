@@ -1,0 +1,6 @@
+#!/bin/sh
+
+find \
+    /home/fastdl/ \
+    -type f -not -name '*.bz2' -print0 | \
+    xargs -0 -n1 -P4 bzip2 --force --keep

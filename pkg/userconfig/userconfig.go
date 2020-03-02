@@ -128,13 +128,5 @@ func mergeGlobalWithServerCfg(globalCfg *config.GlobalConfig, cfg *config.Config
 		}
 	}
 
-	if cfg.Cachet == nil {
-		cfg.Cachet = globalCfg.Cachet
-	} else if globalCfg.Cachet != nil {
-		if err := mergo.Merge(cfg.Cachet, globalCfg.Cachet); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }

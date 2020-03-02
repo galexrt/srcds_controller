@@ -19,7 +19,6 @@ package checker
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -109,48 +108,6 @@ func handleDockerEvent(event events.Message) error {
 		}
 		if !serverCfg.Server.Enabled {
 			return nil
-		}
-
-		var componentIDOpt string
-		for _, check := range serverCfg.Server.Checks {
-			if check.Limit != nil {
-				var ok bool
-				componentIDOpt, ok = check.Limit.ActionOpts["cachetComponentID"]
-				if !ok {
-					continue
-				}
-			}
-		}
-		if componentIDOpt == "" {
-			return fmt.Errorf("no cachet component ID given for server")
-		}
-
-		componentID, err := strconv.Atoi(componentIDOpt)
-		if err != nil {
-			return fmt.Errorf("failed to convert cachet component ID string to integer. %+v", err)
-		}
-		if componentID <= 0 {
-			return fmt.Errorf("invalid cachet component ID given for server")
-		}
-
-		if viper.GetBool("dry-run") {
-			log.WithField("server", serverName).Info("dry-run mode active, server started cachet UP incident creation")
-		} else {
-			log.WithField("server", serverName).Info("creating cachet UP incident")
-
-			cachetURL := viper.GetString("cachet-url")
-			if cachetURL == "" {
-				return fmt.Errorf("no cachet url given")
-			}
-
-			cachetToken := viper.GetString("cachet-token")
-			if cachetToken == "" {
-				return fmt.Errorf("no cachet API token given")
-			}
-
-			if err := cachetStartupIncident(cachetURL, cachetToken, componentID); err != nil {
-				return err
-			}
 		}
 	default:
 		log.WithField("event_action", eventAction).Debugf("docker event isn't of our concern (not of type 'die')")

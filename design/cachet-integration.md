@@ -1,5 +1,7 @@
 # Cachet Integration
 
+**Status**: Abandoned.
+
 ## Questions
 
 * When should an incident message / update be created on Cachet?

@@ -32,9 +32,7 @@ server:
         count: 1
         actions:
           - RESTART
-          - CACHET
-        actionOpts:
-          cachetComponentID: 5
+        actionOpts: {}
 checker:
   interval: 30s
   splay:
