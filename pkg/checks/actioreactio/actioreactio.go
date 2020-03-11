@@ -21,13 +21,13 @@ import (
 	"context"
 	"io"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/checks"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/imdario/mergo"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,6 +35,7 @@ var (
 	defaultOpts = map[string]string{
 		"timeout": "10s",
 	}
+	foundCh = make(chan bool, 1)
 )
 
 func init() {
@@ -43,69 +44,61 @@ func init() {
 
 // Run run a actioreactio check on a config.Server
 func Run(check config.Check, srv *config.Config) bool {
+	logger := log.WithFields(logrus.Fields{
+		"server": srv.Server.Name,
+	})
+
 	if err := mergo.Map(&check.Opts, defaultOpts); err != nil {
-		log.Fatalf("failed to merge checks opts and rcon check defaults %s", srv.Server.Name)
+		logger.Fatalf("failed to merge checks opts and rcon check defaults %s", srv.Server.Name)
 	}
 
-	stdout, _, err := server.Logs(srv, 0*time.Second, 1, true)
+	stdout, stderr, err := server.Logs(srv, 0*time.Second, 1, true)
 	if err != nil {
-		log.Errorf("error while getting logs from server. %+v", err)
+		logger.Errorf("error while getting logs from server. %+v", err)
 		return false
 	}
-	defer stdout.Close()
+	stdout.Close()
+	defer stderr.Close()
 
 	timeoutDuration, err := time.ParseDuration(check.Opts["timeout"])
 	if err != nil {
-		log.Errorf("failed to parse actioreactio timeout check opts. %+v", err)
+		logger.Errorf("failed to parse actioreactio timeout check opts. %+v", err)
 		return false
 	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 
-	wg := sync.WaitGroup{}
-	foundInfo := make(chan bool)
-	defer close(foundInfo)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		foundInfo <- checkStreamForString(ctx, stdout, `Unknown command "srcds_controller_check"`)
-	}()
+	go checkStreamForString(stderr, `Unknown command "srcds_controller_check"`)
 
 	if err := server.SendCommand(srv, []string{
-		"\nsrcds_controller_check",
+		"srcds_controller_check",
 	}); err != nil {
-		log.Errorf("error while sending actioreactio command to server. %+v", err)
+		logger.Errorf("error while sending actioreactio command to server. %+v", err)
 		return false
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			if err := ctx.Err(); err != nil {
-				log.Errorf("ctx error in actioreactio check timeout. %+v", err)
-			}
-			return false
-		case found := <-foundInfo:
-			wg.Wait()
-			return found
-		}
+	select {
+	case <-ctx.Done():
+		logger.Errorf("timeout while waiting for actioreactio output")
+		return false
+	case result := <-foundCh:
+		logger.Infof("got a result in time: %+v", result)
+		return result
 	}
 }
 
-func checkStreamForString(ctx context.Context, stream io.Reader, search string) bool {
+func checkStreamForString(stream io.Reader, search string) {
 	scanner := bufio.NewScanner(stream)
 	for scanner.Scan() {
 		text := scanner.Text()
 		if strings.Contains(text, search) {
-			return true
+			foundCh <- true
+			return
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Errorf("error during logs line scanning. %+v", err)
 	}
-
-	return false
+	foundCh <- false
 }

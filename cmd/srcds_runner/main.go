@@ -54,13 +54,13 @@ type outputFilter struct {
 }
 
 var (
-	logger       *zap.SugaredLogger
-	cfgMutex     = &sync.Mutex{}
-	chancloser   = &chcloser.ChannelCloser{}
-	tty          *os.File
-	out          io.Reader
-	consoleMutex sync.Mutex
-	outFilter    = outputFilter{}
+	logger          *zap.SugaredLogger
+	cfgMutex        = &sync.Mutex{}
+	chancloser      = &chcloser.ChannelCloser{}
+	tty             *os.File
+	out             io.Reader
+	consoleMutex    sync.Mutex
+	stderrOutFilter = outputFilter{}
 )
 
 func main() {
@@ -176,7 +176,7 @@ func main() {
 			if onExitCommand != "" {
 				logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
 
-				tty.Write([]byte("\n\n" + onExitCommand + "\n"))
+				tty.Write([]byte("\n" + onExitCommand + "\n"))
 				time.Sleep(5 * time.Second)
 			}
 		}
@@ -235,13 +235,15 @@ func copyLogs(r io.Reader) error {
 			outLine := stripansi.Strip(
 				string(buf[0:n]),
 			)
-			if skipOutputLine(outLine) {
-				continue
+			if lineToStderr(outLine) {
+				os.Stderr.Write([]byte(
+					outLine,
+				))
+			} else {
+				os.Stdout.Write([]byte(
+					outLine,
+				))
 			}
-			os.Stdout.Write([]byte(
-				outLine,
-			),
-			)
 		}
 		if err == io.EOF {
 			return nil
@@ -280,13 +282,13 @@ func reconciliation(stopCh chan struct{}) {
 			consoleMutex.Lock()
 			func() {
 				defer consoleMutex.Unlock()
-				outFilter.Lock()
-				outFilter.Block = true
+				stderrOutFilter.Lock()
+				stderrOutFilter.Block = true
 				if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", serverCfg.RCON.Password))); err != nil {
 					logger.Errorf("failed to write rcon_password command to server console. %+v", err)
 				}
-				outFilter.Block = false
-				outFilter.Unlock()
+				stderrOutFilter.Block = false
+				stderrOutFilter.Unlock()
 			}()
 		}
 		select {
@@ -297,14 +299,14 @@ func reconciliation(stopCh chan struct{}) {
 	}
 }
 
-func skipOutputLine(in string) bool {
+func lineToStderr(in string) bool {
 	if strings.Contains(in, "srcds_controller_check") {
 		return true
 	}
 
-	outFilter.Lock()
-	defer outFilter.Unlock()
-	if outFilter.Block {
+	stderrOutFilter.Lock()
+	defer stderrOutFilter.Unlock()
+	if stderrOutFilter.Block {
 		return true
 	}
 

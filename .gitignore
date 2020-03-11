@@ -32,6 +32,8 @@ srcds_cmdrelay
 !srcds_cmdrelay/
 srcds_controller
 !srcds_controller/
+/srcds_run
+!/srcds_run.go
 srcds_runner
 !srcds_runner/
 .srcds_controller.yaml

@@ -149,20 +149,22 @@ var serverConsoleCmd = &cobra.Command{
 					return
 				}
 			}(serverCfg.Server.Name)
-			go func(serverName string) {
-				scanner := bufio.NewScanner(stderr)
-				for scanner.Scan() {
-					msg := scanner.Text()
-					if len(servers) > 1 {
-						msg = fmt.Sprintf("%s: %s", serverName, msg)
+			if viper.GetBool("debug") {
+				go func(serverName string) {
+					scanner := bufio.NewScanner(stderr)
+					for scanner.Scan() {
+						msg := scanner.Text()
+						if len(servers) > 1 {
+							msg = fmt.Sprintf("%s: %s", serverName, msg)
+						}
+						outChan <- msg
 					}
-					outChan <- msg
-				}
-				if scanner.Err() != nil {
-					errors <- scanner.Err()
-					return
-				}
-			}(serverCfg.Server.Name)
+					if scanner.Err() != nil {
+						errors <- scanner.Err()
+						return
+					}
+				}(serverCfg.Server.Name)
+			}
 		}
 
 		go func() {

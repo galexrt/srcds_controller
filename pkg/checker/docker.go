@@ -25,7 +25,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	log "github.com/sirupsen/logrus"
@@ -54,13 +53,17 @@ func CheckForDockerEvents(stopCh <-chan struct{}) {
 		case event := <-eventStream:
 			log.Debug("received docker event")
 			if _, ok := event.Actor.Attributes["name"]; ok {
-				event.Actor.Attributes["name"] = strings.TrimPrefix(event.Actor.Attributes["name"], config.Cfg.Docker.NamePrefix)
-				if err := handleDockerEvent(event); err != nil {
-					log.Error(err)
+				// Iterate over usercfg.Cfg.Servers and check which server matches by name
+				for _, srv := range userconfig.Cfg.Servers {
+					if event.Actor.Attributes["name"] == srv.Docker.NamePrefix+srv.Server.Name {
+						event.Actor.Attributes["name"] = strings.TrimPrefix(event.Actor.Attributes["name"], srv.Docker.NamePrefix)
+						if err := handleDockerEvent(event); err != nil {
+							log.Error(err)
+						}
+					}
 				}
 			} else {
 				log.Error(fmt.Errorf("no container name in docker event attributes"))
-				break
 			}
 		case err := <-errChan:
 			if err != nil {
