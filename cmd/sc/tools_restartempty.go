@@ -32,7 +32,6 @@ import (
 
 // serverToolsRestartEmpty represents the stop command
 var serverToolsRestartEmpty = &cobra.Command{
-	Hidden:            true,
 	Use:               "restartempty",
 	Short:             "Use quit_nice command, wait till server exits / quits and restart server when exited.",
 	PersistentPreRunE: initDockerCli,
