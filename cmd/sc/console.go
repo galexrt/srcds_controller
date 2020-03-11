@@ -149,6 +149,7 @@ var serverConsoleCmd = &cobra.Command{
 					return
 				}
 			}(serverCfg.Server.Name)
+
 			if viper.GetBool("debug") {
 				go func(serverName string) {
 					scanner := bufio.NewScanner(stderr)
