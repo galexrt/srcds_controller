@@ -1,6 +1,36 @@
-#!/bin/sh
+#!/bin/bash
+
+if [ -z "$HOME" ]; then
+    echo "HOME env var not set. Exiting ..."
+    exit 1
+fi
+
+CACHE_DIR="$HOME/.cache/fastdl-bzip"
+
+mkdir -p "$CACHE_DIR" || { echo "cache dir $CACHE_DIR failed to be created"; exit 1; }
+
+if [ -f "$CACHE_DIR/lock" ]; then
+    echo "Lock file found, exiting 0"
+    exit 0
+fi
+
+echo "$BASHPID" > "$CACHE_DIR/lock"
+
+trap '{ rm -f "$CACHE_DIR/lock" "$CACHE_DIR/tmp."*; }' EXIT
 
 find \
     /home/fastdl/ \
-    -type f -not -name '*.bz2' -print0 | \
-    xargs -0 -n1 -P4 bzip2 --force --keep
+    \( ! -regex '.*/\..*' \) \
+    -type f -not -iname '*.bz2' -not -iname '*.html' -print0 | \
+    while IFS= read -r -d '' line; do
+        if [ ! -f "$line.bz2" ] || [ "$line.bz2" -nt "$line" ]; then
+            echo "Skipping file: $line"
+            continue
+        fi
+        echo "Bzipping file: $line"
+        TMP_FILEPATH="$(mktemp -p "$CACHE_DIR")"
+        bzcat --compress --force --keep "$line" > "$TMP_FILEPATH"
+        mv "$TMP_FILEPATH" "$line.bz2"
+        rm -f "$TMP_FILEPATH"
+        echo "Completed, bzip file: $line"
+    done

@@ -18,6 +18,9 @@ func checkACL(r *http.Request) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+		if f == nil {
+			return false, fmt.Errorf("net connection fd is nil")
+		}
 		defer f.Close()
 
 		pcred, err := unix.GetsockoptUcred(int(f.Fd()), unix.SOL_SOCKET, unix.SO_PEERCRED)
@@ -25,16 +28,21 @@ func checkACL(r *http.Request) (bool, error) {
 			return false, err
 		}
 
-		return checkPCREDAgainstACL(pcred, config.Cfg.Server.ACL)
+		return checkPCREDAgainstACL(pcred, getServerACL())
 	}
 	return false, nil
 }
 
-func checkPCREDAgainstACL(cred *unix.Ucred, acl *config.ACL) (bool, error) {
-	if acl == nil {
-		return false, fmt.Errorf("no ACLs found, disallowing any access")
+func getServerACL() config.ACL {
+	cfgMutex.Lock()
+	defer cfgMutex.Unlock()
+	if config.Cfg.Server.ACL == nil {
+		return config.ACL{}
 	}
+	return *config.Cfg.Server.ACL
+}
 
+func checkPCREDAgainstACL(cred *unix.Ucred, acl config.ACL) (bool, error) {
 	for _, u := range acl.Users {
 		if u == int(cred.Uid) {
 			return true, nil
