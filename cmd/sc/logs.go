@@ -76,7 +76,9 @@ var serverLogsCmd = &cobra.Command{
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
 					}
-					outChan <- msg
+					if viper.GetBool("debug") {
+						outChan <- msg
+					}
 				}
 				if scanner.Err() != nil {
 					errors <- scanner.Err()

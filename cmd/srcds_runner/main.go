@@ -48,19 +48,13 @@ const (
 	ConfigFileName = ".srcds_controller_server.yaml"
 )
 
-type outputFilter struct {
-	sync.Mutex
-	Block bool
-}
-
 var (
-	logger          *zap.SugaredLogger
-	cfgMutex        = &sync.Mutex{}
-	chancloser      = &chcloser.ChannelCloser{}
-	tty             *os.File
-	out             io.Reader
-	consoleMutex    sync.Mutex
-	stderrOutFilter = outputFilter{}
+	logger       *zap.SugaredLogger
+	cfgMutex     = &sync.Mutex{}
+	chancloser   = &chcloser.ChannelCloser{}
+	tty          *os.File
+	out          io.Reader
+	consoleMutex sync.Mutex
 )
 
 func main() {
@@ -235,6 +229,9 @@ func copyLogs(r io.Reader) error {
 			outLine := stripansi.Strip(
 				string(buf[0:n]),
 			)
+
+			outLine = cleanOutput(outLine)
+
 			if lineToStderr(outLine) {
 				os.Stderr.Write([]byte(
 					outLine,
@@ -282,13 +279,9 @@ func reconciliation(stopCh chan struct{}) {
 			consoleMutex.Lock()
 			func() {
 				defer consoleMutex.Unlock()
-				stderrOutFilter.Lock()
-				stderrOutFilter.Block = true
 				if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", serverCfg.RCON.Password))); err != nil {
 					logger.Errorf("failed to write rcon_password command to server console. %+v", err)
 				}
-				stderrOutFilter.Block = false
-				stderrOutFilter.Unlock()
 			}()
 		}
 		select {
@@ -299,16 +292,19 @@ func reconciliation(stopCh chan struct{}) {
 	}
 }
 
+func cleanOutput(in string) string {
+	if strings.HasPrefix(in, "rcon_password") {
+		in = "rcon_password XXXXXXXXX"
+	}
+	return in
+}
+
 func lineToStderr(in string) bool {
 	if strings.Contains(in, "srcds_controller_check") {
 		return true
 	}
 
-	stderrOutFilter.Lock()
-	defer stderrOutFilter.Unlock()
-	if stderrOutFilter.Block {
-		return true
-	}
+	// TODO should rcon_password be hidden or replaced with XXXX or some other placeholder?
 
 	return false
 }

@@ -72,9 +72,6 @@ func (uc *UserConfig) Load(globalCfg *config.GlobalConfig, cfgs *Config) error {
 			if err = yaml.Unmarshal(out, serverCfg); err != nil {
 				return err
 			}
-			if err = serverCfg.Verify(); err != nil {
-				return err
-			}
 
 			if serverCfg.Server.Name == "" {
 				continue
@@ -83,6 +80,10 @@ func (uc *UserConfig) Load(globalCfg *config.GlobalConfig, cfgs *Config) error {
 			serverCfg.Server.Path, _ = filepath.Split(confToLoad)
 
 			if err := mergeGlobalWithServerCfg(globalCfg, serverCfg); err != nil {
+				return err
+			}
+
+			if err = serverCfg.Verify(); err != nil {
 				return err
 			}
 

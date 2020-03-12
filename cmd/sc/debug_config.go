@@ -28,7 +28,6 @@ import (
 var scDebugConfigCmd = &cobra.Command{
 	Use:               "config",
 	Short:             "Debug config issues",
-	Hidden:            true,
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("userconfig.Cfg:")
