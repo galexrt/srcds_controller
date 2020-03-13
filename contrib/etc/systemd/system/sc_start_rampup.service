@@ -1,0 +1,16 @@
+[Unit]
+Description=sc start rampup
+Before=srcds_controller.service srcds_cmdrelay.service
+After=local-fs.target network-online.target network.target
+Wants=local-fs.target network-online.target network.target
+
+[Service]
+RemainAfterExit=true
+Type=oneshot
+ExecStart=/usr/local/bin/sc start rampup --all
+User=gameservers
+Group=gameservers
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

@@ -129,7 +129,7 @@ var serverConsoleCmd = &cobra.Command{
 		defer cancel()
 
 		for _, serverCfg := range servers {
-			stdout, stderr, err := server.Logs(ctx, serverCfg, 0*time.Millisecond, 10, true)
+			cmd, stdout, stderr, err := server.Logs(ctx, serverCfg, 0*time.Millisecond, 10, true)
 			if err != nil {
 				ui.Quit()
 				return err
@@ -154,6 +154,9 @@ var serverConsoleCmd = &cobra.Command{
 				}
 			}(serverCfg.Server.Name)
 
+			go func() {
+				cmd.Wait()
+			}()
 			go func(serverName string) {
 				scanner := bufio.NewScanner(stderr)
 				for scanner.Scan() {
@@ -195,9 +198,7 @@ var serverConsoleCmd = &cobra.Command{
 
 func init() {
 	serverConsoleCmd.PersistentFlags().Bool("history", true, "If history should be enabled")
-	serverConsoleCmd.PersistentFlags().Bool("debug", false, "If log messages for debugging should be shown")
 	viper.BindPFlag("history", serverConsoleCmd.PersistentFlags().Lookup("history"))
-	viper.BindPFlag("debug", serverConsoleCmd.PersistentFlags().Lookup("debug"))
 
 	rootCmd.AddCommand(serverConsoleCmd)
 }

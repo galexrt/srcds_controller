@@ -29,12 +29,12 @@ import (
 )
 
 // Logs show / stream the logs of a server
-func Logs(ctx context.Context, serverCfg *config.Config, since time.Duration, tail int, follow bool) (io.ReadCloser, io.ReadCloser, error) {
-	log.Infof("showing logs of server %s ...\n", serverCfg.Server.Name)
+func Logs(ctx context.Context, serverCfg *config.Config, since time.Duration, tail int, follow bool) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
+	log.Infof("showing logs of server %s", serverCfg.Server.Name)
 
 	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	args := []string{"logs"}
@@ -54,17 +54,17 @@ func Logs(ctx context.Context, serverCfg *config.Config, since time.Duration, ta
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get stdout logs. %+v", err)
+		return nil, nil, nil, fmt.Errorf("failed to get stdout logs. %+v", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get stderr logs. %+v", err)
+		return nil, nil, nil, fmt.Errorf("failed to get stderr logs. %+v", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return stdout, stderr, nil
+	return cmd, stdout, stderr, nil
 }

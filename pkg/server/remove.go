@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -31,6 +32,10 @@ func Remove(serverCfg *config.Config) error {
 
 	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
 	if err != nil {
+		if client.IsErrNotFound(err) {
+			log.Infof("server container %s doesn't exist, no removal done", serverCfg.Server.Name)
+			return nil
+		}
 		return err
 	}
 
@@ -38,6 +43,6 @@ func Remove(serverCfg *config.Config) error {
 		return err
 	}
 
-	log.Infof("removed server container %s.", serverCfg.Server.Name)
+	log.Infof("removed server container %s", serverCfg.Server.Name)
 	return nil
 }

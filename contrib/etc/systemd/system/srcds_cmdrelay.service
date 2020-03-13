@@ -1,0 +1,17 @@
+[Unit]
+Description=srcds_cmdrelay
+After=local-fs.target network-online.target network.target
+Wants=local-fs.target network-online.target network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/default/srcds_cmdrelay
+ExecStart=/usr/local/bin/srcds_cmdrelay $FLAGS
+User=gameservers
+Group=gameservers
+Restart=always
+RestartSec=500ms
+LimitNOFILE=49152
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+[Unit]
+Description=srcds_controller
+After=local-fs.target network-online.target network.target
+Wants=local-fs.target network-online.target network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/srcds_controller \
+    checker \
+    --log-level=INFO \
+    --dry-run=true
+User=gameservers
+Group=gameservers
+Restart=always
+RestartSec=10s
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target

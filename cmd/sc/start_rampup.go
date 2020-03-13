@@ -17,20 +17,19 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"sync"
+	"time"
 
-	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// serverStartCmd represents the start command
-var serverStartCmd = &cobra.Command{
-	Use:               "start",
-	Short:             "Start one or more servers",
+// serverStartRampUpCmd represents the start command
+var serverStartRampUpCmd = &cobra.Command{
+	Use:               "rampup",
+	Short:             "Ramp up servers one by one with delay between",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		servers, err := checkServers(cmd, args)
@@ -38,36 +37,30 @@ var serverStartCmd = &cobra.Command{
 			return err
 		}
 
-		errorOccured := false
 		wg := sync.WaitGroup{}
-		for _, serverCfg := range servers {
-			wg.Add(1)
-			go func(cfg *config.Config) {
-				defer wg.Done()
+		for _, cfg := range servers {
+			defer wg.Done()
 
-				if viper.GetBool("remove") {
-					if err := server.Remove(cfg); err != nil {
-						log.Errorf("error removing server ")
-					}
+			if viper.GetBool("remove") {
+				if err := server.Remove(cfg); err != nil {
+					log.Errorf("error removing server ")
 				}
+			}
 
-				if err := server.Start(cfg); err != nil {
-					log.Errorf("error during server %s start. %+v", cfg.Server.Name, err)
-					errorOccured = true
-				}
-			}(serverCfg)
+			if err := server.Start(cfg); err != nil {
+				log.Errorf("error during server %s start. %+v", cfg.Server.Name, err)
+			}
 		}
 		wg.Wait()
-		if errorOccured {
-			return fmt.Errorf("error when sending commands")
-		}
 		return nil
 	},
 }
 
 func init() {
-	serverStartCmd.PersistentFlags().BoolP("remove", "r", true, "Remove the server container before starting if it exists")
-	viper.BindPFlag("remove", serverStartCmd.PersistentFlags().Lookup("remove"))
+	serverStartRampUpCmd.PersistentFlags().DurationP("delay", "d", 30*time.Second, "Delay between each server start")
+	serverStartRampUpCmd.PersistentFlags().BoolP("remove", "r", true, "Remove the server container before starting if it exists")
+	viper.BindPFlag("delay", serverStartRampUpCmd.PersistentFlags().Lookup("delay"))
+	viper.BindPFlag("remove", serverStartRampUpCmd.PersistentFlags().Lookup("remove"))
 
-	rootCmd.AddCommand(serverStartCmd)
+	serverStartCmd.AddCommand(serverStartRampUpCmd)
 }

@@ -1,0 +1,1 @@
+FLAGS="--listen-address=PRIVATE_IP:8181 --auth-key=YOUR_COOL_AUTH_KEY"

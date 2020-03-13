@@ -33,7 +33,7 @@ import (
 
 // SendCommand sends a command to a server
 func SendCommand(serverCfg *config.Config, args []string) error {
-	log.Infof("sending command '%s' to server %s ...\n", strings.Join(args, " "), serverCfg.Server.Name)
+	log.Infof("sending command '%s' to server %s", strings.Join(args, " "), serverCfg.Server.Name)
 
 	httpc := http.Client{
 		Transport: &http.Transport{
@@ -50,7 +50,7 @@ func SendCommand(serverCfg *config.Config, args []string) error {
 		return fmt.Errorf("error during command exec send to server %s. %+v", serverCfg.Server.Name, err)
 	}
 	if resp.StatusCode == http.StatusOK {
-		log.Infof("successfully sent command to server %s.\n", serverCfg.Server.Name)
+		log.Infof("successfully sent command to server %s", serverCfg.Server.Name)
 		return nil
 	}
 

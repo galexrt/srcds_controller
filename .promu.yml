@@ -12,13 +12,12 @@ build:
         -X github.com/prometheus/common/version.BuildUser={{user}}@{{host}}
         -X github.com/prometheus/common/version.BuildDate={{date "20060102-15:04:05"}}
     binaries:
+        - name: srcds_controller
+          path: ./cmd/srcds_controller
         - name: sc
           path: ./cmd/sc
         - name: srcds_cmdrelay
           path: ./cmd/srcds_cmdrelay
-        - name: srcds_controller
-          path: ./cmd/srcds_controller
-
 tarball:
     files:
         - LICENSE

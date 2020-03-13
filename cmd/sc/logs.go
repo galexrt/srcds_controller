@@ -48,7 +48,7 @@ var serverLogsCmd = &cobra.Command{
 		defer cancel()
 
 		for _, serverCfg := range servers {
-			stdin, stderr, err := server.Logs(ctx, serverCfg, viper.GetDuration("since"), viper.GetInt("tail"), viper.GetBool("follow"))
+			cmd, stdin, stderr, err := server.Logs(ctx, serverCfg, viper.GetDuration("since"), viper.GetInt("tail"), viper.GetBool("follow"))
 			if err != nil {
 				return err
 			}
@@ -56,7 +56,11 @@ var serverLogsCmd = &cobra.Command{
 				return fmt.Errorf("server.Logs returned no response. something is wrong")
 			}
 
-			wg.Add(2)
+			wg.Add(3)
+			go func() {
+				defer wg.Done()
+				cmd.Wait()
+			}()
 			go func(serverName string) {
 				defer wg.Done()
 				scanner := bufio.NewScanner(stdin)

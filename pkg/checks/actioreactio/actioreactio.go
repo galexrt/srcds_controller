@@ -21,6 +21,7 @@ import (
 	"context"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/checks"
@@ -58,18 +59,29 @@ func Run(check config.Check, srv *config.Config) bool {
 		return false
 	}
 
+	startTime := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 
-	stdout, stderr, err := server.Logs(ctx, srv, 0*time.Second, 5, true)
+	cmd, stdout, stderr, err := server.Logs(ctx, srv, 0*time.Second, 5, true)
 	if err != nil {
 		logger.Errorf("error while getting logs from server. %+v", err)
 		return false
 	}
-	stdout.Close()
-	defer stderr.Close()
+	defer stdout.Close()
 
-	go checkStreamForString(stderr, `Unknown command "srcds_controller_check"`)
+	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		cmd.Wait()
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		checkStreamForString(stderr, `Unknown command "srcds_controller_check"`)
+	}()
 
 	if err := server.SendCommand(srv, []string{
 		"srcds_controller_check",
@@ -78,20 +90,24 @@ func Run(check config.Check, srv *config.Config) bool {
 		return false
 	}
 
+	result := false
 	select {
 	case <-ctx.Done():
-		logger.Errorf("timeout while waiting for actioreactio output")
-		return false
-	case result := <-foundCh:
-		logger.Infof("got a result in time: %+v", result)
-		return result
+		logger.Errorf("timeout while waiting for actioreactio output (%+v)", time.Now().Sub(startTime))
+	case result = <-foundCh:
+		logger.Debugf("got a result in time (%+v): %+v", time.Now().Sub(startTime), result)
 	}
+
+	wg.Wait()
+	return result
 }
 
-func checkStreamForString(stream io.Reader, search string) {
+func checkStreamForString(stream io.ReadCloser, search string) {
+	defer stream.Close()
 	scanner := bufio.NewScanner(stream)
 	for scanner.Scan() {
 		text := scanner.Text()
+		log.Debugf("checkStreamForString line: %+v", text)
 		if strings.Contains(text, search) {
 			foundCh <- true
 			return
@@ -99,7 +115,7 @@ func checkStreamForString(stream io.Reader, search string) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Errorf("error during logs line scanning. %+v", err)
+		log.Debugf("error during logs line scanning. %+v", err)
 	}
 	foundCh <- false
 }
