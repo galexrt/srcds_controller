@@ -17,7 +17,7 @@ VERSION      ?= $(shell cat VERSION)
 pkgs = $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
 
 DOCKER_IMAGE_NAME ?= galexrt/srcds_controller
-DOCKER_IMAGE_TAG  ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
+DOCKER_IMAGE_TAG  ?= runner-$(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 
 all: format style vet test build
 
@@ -30,8 +30,7 @@ crossbuild: promu
 
 docker:
 	@echo ">> building docker image"
-	docker build -t galexrt/srcds_controller:runner-latest .
-	#docker build -t "$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)" .
+	docker build -t "$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)" .
 
 format:
 	go fmt $(pkgs)
