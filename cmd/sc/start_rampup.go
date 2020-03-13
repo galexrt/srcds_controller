@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"sync"
 	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/server"
@@ -37,10 +36,7 @@ var serverStartRampUpCmd = &cobra.Command{
 			return err
 		}
 
-		wg := sync.WaitGroup{}
-		for _, cfg := range servers {
-			defer wg.Done()
-
+		for k, cfg := range servers {
 			if viper.GetBool("remove") {
 				if err := server.Remove(cfg); err != nil {
 					log.Errorf("error removing server ")
@@ -50,8 +46,11 @@ var serverStartRampUpCmd = &cobra.Command{
 			if err := server.Start(cfg); err != nil {
 				log.Errorf("error during server %s start. %+v", cfg.Server.Name, err)
 			}
+
+			if k+1 != len(servers) {
+				time.Sleep(viper.GetDuration("delay"))
+			}
 		}
-		wg.Wait()
 		return nil
 	},
 }
