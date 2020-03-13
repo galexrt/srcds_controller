@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -27,22 +28,28 @@ import (
 )
 
 // Remove remove a server container
-func Remove(serverCfg *config.Config) error {
-	log.Infof("removing server container %s ...", serverCfg.Server.Name)
+func Remove(srvCfg *config.Config) error {
+	log.Infof("removing server container %s ...", srvCfg.Server.Name)
 
-	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
+	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(srvCfg.Docker.NamePrefix, srvCfg.Server.Name))
 	if err != nil {
 		if client.IsErrNotFound(err) {
-			log.Infof("server container %s doesn't exist, no removal done", serverCfg.Server.Name)
+			log.Infof("server container %s doesn't exist, no removal done", srvCfg.Server.Name)
 			return nil
 		}
 		return err
+	}
+
+	normalizedStatus := strings.ToLower(cont.State.Status)
+	if normalizedStatus == "running" {
+		log.Warnf("server container %s still running, can't remove it", srvCfg.Server.Name)
+		return nil
 	}
 
 	if err = DockerCli.ContainerRemove(context.Background(), cont.ID, types.ContainerRemoveOptions{}); err != nil {
 		return err
 	}
 
-	log.Infof("removed server container %s", serverCfg.Server.Name)
+	log.Infof("removed server container %s", srvCfg.Server.Name)
 	return nil
 }

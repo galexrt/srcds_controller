@@ -39,7 +39,7 @@ var serverStartRampUpCmd = &cobra.Command{
 		for k, cfg := range servers {
 			if viper.GetBool("remove") {
 				if err := server.Remove(cfg); err != nil {
-					log.Errorf("error removing server ")
+					log.Errorf("error removing server. %+v", err)
 				}
 			}
 

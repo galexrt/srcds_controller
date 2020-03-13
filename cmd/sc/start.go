@@ -47,7 +47,7 @@ var serverStartCmd = &cobra.Command{
 
 				if viper.GetBool("remove") {
 					if err := server.Remove(cfg); err != nil {
-						log.Errorf("error removing server ")
+						log.Errorf("error removing server. %+v", err)
 					}
 				}
 
