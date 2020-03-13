@@ -6,4 +6,4 @@ checks:
   rcon:
     timeout: 12s
   actioreactio:
-    timeout: 5s
+    timeout: 10s

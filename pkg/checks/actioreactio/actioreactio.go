@@ -52,21 +52,22 @@ func Run(check config.Check, srv *config.Config) bool {
 		logger.Fatalf("failed to merge checks opts and rcon check defaults %s", srv.Server.Name)
 	}
 
-	stdout, stderr, err := server.Logs(srv, 0*time.Second, 1, true)
+	timeoutDuration, err := time.ParseDuration(check.Opts["timeout"])
+	if err != nil {
+		logger.Errorf("failed to parse actioreactio timeout check opts. %+v", err)
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
+	defer cancel()
+
+	stdout, stderr, err := server.Logs(ctx, srv, 0*time.Second, 5, true)
 	if err != nil {
 		logger.Errorf("error while getting logs from server. %+v", err)
 		return false
 	}
 	stdout.Close()
 	defer stderr.Close()
-
-	timeoutDuration, err := time.ParseDuration(check.Opts["timeout"])
-	if err != nil {
-		logger.Errorf("failed to parse actioreactio timeout check opts. %+v", err)
-		return false
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
-	defer cancel()
 
 	go checkStreamForString(stderr, `Unknown command "srcds_controller_check"`)
 

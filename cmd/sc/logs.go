@@ -18,6 +18,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -43,8 +44,11 @@ var serverLogsCmd = &cobra.Command{
 		outChan := make(chan string)
 		doneCh := make(chan struct{})
 
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		for _, serverCfg := range servers {
-			stdin, stderr, err := server.Logs(serverCfg, viper.GetDuration("since"), viper.GetInt("tail"), viper.GetBool("follow"))
+			stdin, stderr, err := server.Logs(ctx, serverCfg, viper.GetDuration("since"), viper.GetInt("tail"), viper.GetBool("follow"))
 			if err != nil {
 				return err
 			}

@@ -18,6 +18,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -124,8 +125,11 @@ var serverConsoleCmd = &cobra.Command{
 
 		errors := make(chan error)
 
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		for _, serverCfg := range servers {
-			stdout, stderr, err := server.Logs(serverCfg, 0*time.Millisecond, 10, true)
+			stdout, stderr, err := server.Logs(ctx, serverCfg, 0*time.Millisecond, 10, true)
 			if err != nil {
 				ui.Quit()
 				return err

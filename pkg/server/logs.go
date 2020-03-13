@@ -29,7 +29,7 @@ import (
 )
 
 // Logs show / stream the logs of a server
-func Logs(serverCfg *config.Config, since time.Duration, tail int, follow bool) (io.ReadCloser, io.ReadCloser, error) {
+func Logs(ctx context.Context, serverCfg *config.Config, since time.Duration, tail int, follow bool) (io.ReadCloser, io.ReadCloser, error) {
 	log.Infof("showing logs of server %s ...\n", serverCfg.Server.Name)
 
 	cont, err := DockerCli.ContainerInspect(context.Background(), util.GetContainerName(serverCfg.Docker.NamePrefix, serverCfg.Server.Name))
@@ -50,7 +50,7 @@ func Logs(serverCfg *config.Config, since time.Duration, tail int, follow bool) 
 
 	args = append(args, cont.ID)
 
-	cmd := exec.Command("docker", args...)
+	cmd := exec.CommandContext(ctx, "docker", args...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
