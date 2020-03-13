@@ -5,7 +5,6 @@ go 1.13
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
-	github.com/blend/go-sdk v1.1.1
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/docker/distribution v2.7.1+incompatible // indirect
