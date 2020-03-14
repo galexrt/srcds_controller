@@ -69,8 +69,9 @@ jobs:
               promu release .tarballs
               mkdir $CIRCLE_ARTIFACTS/releases/ && cp -a .tarballs/* $CIRCLE_ARTIFACTS/releases/
           else
-              make docker DOCKER_IMAGE_NAME=runner-$DOCKER_IMAGE_NAME
-              make docker DOCKER_IMAGE_NAME=runner-$QUAY_IMAGE_NAME
+              DOCKER_IMAGE_TAG="runner-$(git rev-parse --abbrev-ref HEAD | sed 's|/|-|g')"
+              make docker DOCKER_IMAGE_NAME=runner-$DOCKER_IMAGE_NAME DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG
+              make docker DOCKER_IMAGE_NAME=runner-$QUAY_IMAGE_NAME DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG
           fi
           docker images
     - save_cache:
