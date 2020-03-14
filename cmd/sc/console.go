@@ -20,10 +20,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/linehistory"
@@ -51,8 +54,7 @@ var serverConsoleCmd = &cobra.Command{
 			return err
 		}
 
-		var consoleError error
-
+		// Init console history system
 		historyStore, histFile, err := history()
 		if err != nil {
 			return err
@@ -77,16 +79,16 @@ var serverConsoleCmd = &cobra.Command{
 			if command == "" {
 				return
 			}
-			for _, serverCfg := range servers {
-				if err := server.SendCommand(serverCfg, []string{command}); err != nil {
-					outChan <- fmt.Sprintf("\n=> SC CONSOLE ERROR BEGIN\n%+v\n=> SC CONSOLE ERROR END\n", err)
+			for _, srvCfg := range servers {
+				if err := server.SendCommand(srvCfg, []string{command}); err != nil {
+					outChan <- fmt.Sprintf("CONSOLE ERROR: %+v", strings.Trim(err.Error(), "\n"))
 				}
 			}
 			historyStore.Add(command)
 			if viper.GetBool("history") {
 				if histFile != nil {
 					if _, err := histFile.WriteString(command + "\n"); err != nil {
-						log.Fatal(err)
+						log.Error(err)
 					}
 				}
 			}
@@ -106,8 +108,12 @@ var serverConsoleCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		ui.SetKeybinding("Esc", func() { ui.Quit() })
-		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		ui.SetKeybinding("Esc", func() { cancel() })
+		ui.SetKeybinding("Ctrl+C", func() { cancel() })
 		ui.SetKeybinding("PgUp", func() {
 			historyScroll.Scroll(0, -1)
 		})
@@ -123,24 +129,22 @@ var serverConsoleCmd = &cobra.Command{
 			input.SetText(histRet)
 		})
 
-		errors := make(chan error)
+		wg := &sync.WaitGroup{}
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		for _, serverCfg := range servers {
-			cmd, stdout, stderr, err := server.Logs(ctx, serverCfg, 0*time.Millisecond, 10, true)
+		for _, srvCfg := range servers {
+			cmd, stdout, stderr, err := server.Logs(ctx, srvCfg, 0*time.Millisecond, 10, true)
 			if err != nil {
-				ui.Quit()
 				return err
 			}
 			if stdout == nil || stderr == nil {
-				ui.Quit()
 				return fmt.Errorf("unable to get server container logs. server.Logs returned nil body. %+v", err)
 			}
 
-			go func(serverName string) {
-				scanner := bufio.NewScanner(stdout)
+			wg.Add(3)
+			go func(serverName string, stream io.ReadCloser) {
+				defer wg.Done()
+				defer stream.Close()
+				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
 					if len(servers) > 1 {
@@ -149,16 +153,14 @@ var serverConsoleCmd = &cobra.Command{
 					outChan <- msg
 				}
 				if scanner.Err() != nil {
-					errors <- scanner.Err()
+					log.Error(scanner.Err())
 					return
 				}
-			}(serverCfg.Server.Name)
-
-			go func() {
-				cmd.Wait()
-			}()
-			go func(serverName string) {
-				scanner := bufio.NewScanner(stderr)
+			}(srvCfg.Server.Name, stdout)
+			go func(serverName string, stream io.ReadCloser) {
+				defer wg.Done()
+				defer stream.Close()
+				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
 					if len(servers) > 1 {
@@ -169,30 +171,39 @@ var serverConsoleCmd = &cobra.Command{
 					}
 				}
 				if scanner.Err() != nil {
-					errors <- scanner.Err()
+					log.Error(scanner.Err())
 					return
 				}
-			}(serverCfg.Server.Name)
+			}(srvCfg.Server.Name, stderr)
+			go func(c *exec.Cmd) {
+				defer wg.Done()
+				c.Wait()
+			}(cmd)
 		}
 
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for {
 				select {
-				case out := <-outChan:
-					history.Append(tui.NewLabel(out))
-					ui.Repaint()
-				case erro := <-errors:
-					consoleError = erro
+				case <-ctx.Done():
 					ui.Quit()
 					return
+				case out := <-outChan:
+					history.Append(tui.NewLabel(out))
+					//ui.Repaint()
 				}
 			}
 		}()
 
+		time.Sleep(100 * time.Millisecond)
+
 		if err := ui.Run(); err != nil {
-			return err
+			log.Error(err)
 		}
-		return consoleError
+
+		wg.Wait()
+		return nil
 	},
 }
 

@@ -55,10 +55,9 @@ func SendCommand(serverCfg *config.Config, args []string) error {
 	}
 
 	out, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(out))
 	if err != nil {
-		return errors.Wrap(err, "failed to read body from send command response")
+		return errors.Wrapf(err, "failed to read body from send command response")
 	}
 
-	return fmt.Errorf("error during sending of command to srcds_runner for server %s", serverCfg.Server.Name)
+	return fmt.Errorf("error during sending of command to srcds_runner for server %s (response body: %s)", serverCfg.Server.Name, strings.ReplaceAll(string(out), "\n", "\\n"))
 }
