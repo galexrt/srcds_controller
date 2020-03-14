@@ -191,12 +191,23 @@ var serverConsoleCmd = &cobra.Command{
 					return
 				case out := <-outChan:
 					history.Append(tui.NewLabel(out))
-					//ui.Repaint()
 				}
 			}
 		}()
-
 		time.Sleep(100 * time.Millisecond)
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(viper.GetDuration("repaint-interval")):
+					ui.Repaint()
+				}
+			}
+		}()
 
 		if err := ui.Run(); err != nil {
 			log.Error(err)
@@ -209,7 +220,9 @@ var serverConsoleCmd = &cobra.Command{
 
 func init() {
 	serverConsoleCmd.PersistentFlags().Bool("history", true, "If history should be enabled")
+	serverConsoleCmd.PersistentFlags().Duration("repaint-interval", 250*time.Millisecond, "Console repaint interval, do not change unless you know what you are doing!")
 	viper.BindPFlag("history", serverConsoleCmd.PersistentFlags().Lookup("history"))
+	viper.BindPFlag("repaint-interval", serverConsoleCmd.PersistentFlags().Lookup("repaint-interval"))
 
 	rootCmd.AddCommand(serverConsoleCmd)
 }
