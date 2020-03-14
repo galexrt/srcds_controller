@@ -24,7 +24,7 @@ all: format style vet test build
 build: promu
 	CGO_ENABLED=1 GOOS=linux go build -v -o srcds_runner ./cmd/srcds_runner/
 	@mkdir -p .build/linux-amd64/srcds_runner
-	@cp -fa srcds_runner .build/linux-amd64/srcds_runner
+	@\cp -fa srcds_runner .build/linux-amd64/srcds_runner
 	@$(PROMU) build --prefix $(PREFIX)
 
 crossbuild: promu
