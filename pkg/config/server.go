@@ -32,6 +32,7 @@ type Server struct {
 	MountsDir     string               `yaml:"mountsDir"`
 	Command       string               `yaml:"command"`
 	Flags         []string             `yaml:"flags"`
+	MapSelection  *MapSelection        `yaml:"mapSelection"`
 	RCON          RCON                 `yaml:"rcon"`
 	Checks        []Check              `yaml:"checks"`
 	OnExitCommand string               `yaml:"onExitCommand"`
@@ -57,4 +58,11 @@ type ACL struct {
 type RunOptions struct {
 	UID int `yaml:"uid"`
 	GID int `yaml:"gid"`
+}
+
+// MapSelection map selection config
+type MapSelection struct {
+	Enabled     bool   `yaml:"enabled"`
+	FileFilter  string `yaml:"fileFilter"`
+	FallbackMap string `yaml:"fallbackMap"`
 }

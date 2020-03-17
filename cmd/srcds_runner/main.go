@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -57,6 +59,23 @@ var (
 	consoleMutex sync.Mutex
 )
 
+func init() {
+	rand.Seed(time.Now().Unix())
+}
+
+func getRandomMap(filter string) (string, error) {
+	matches, err := filepath.Glob(filter)
+	if err != nil {
+		return "", err
+	}
+
+	// Example: rp_townsend_v2.bsp # the .bsp must be removed
+	mapName := filepath.Base(matches[rand.Intn(len(matches))])
+	mapName = strings.TrimSuffix(mapName, filepath.Ext(mapName))
+
+	return mapName, nil
+}
+
 func main() {
 	loggerProd, err := zap.NewDevelopment()
 	if err != nil {
@@ -77,6 +96,19 @@ func main() {
 	cfgMutex.Lock()
 	syscall.Umask(config.Cfg.General.Umask)
 
+	chosenMap := config.Cfg.Server.MapSelection.FallbackMap
+	if config.Cfg.Server.MapSelection.Enabled {
+		chosenMap, err = getRandomMap(config.Cfg.Server.MapSelection.FileFilter)
+		if err != nil {
+			logger.Errorf(
+				"failed to get a random map (filter: '%s'), using fallback %s. %+v",
+				config.Cfg.Server.MapSelection.FallbackMap,
+				config.Cfg.Server.MapSelection.FileFilter,
+				err,
+			)
+		}
+	}
+
 	contArgs := strslice.StrSlice{
 		config.Cfg.Server.Command,
 		"-port",
@@ -85,6 +117,7 @@ func main() {
 
 	for _, arg := range config.Cfg.Server.Flags {
 		arg = strings.Replace(arg, "%RCON_PASSWORD%", config.Cfg.Server.RCON.Password, -1)
+		arg = strings.Replace(arg, "%MAP_RANDOM%", chosenMap, -1)
 		contArgs = append(contArgs, arg)
 	}
 	cfgMutex.Unlock()
@@ -303,8 +336,6 @@ func lineToStderr(in string) bool {
 	if strings.Contains(in, "srcds_controller_check") {
 		return true
 	}
-
-	// TODO should rcon_password be hidden or replaced with XXXX or some other placeholder?
 
 	return false
 }

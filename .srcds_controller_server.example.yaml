@@ -13,6 +13,11 @@ server:
   flags:
     - -console
     - -game garrysmod
+    - +map %MAP_RANDOM%
+  mapSelection:
+    enabled: true
+    fileFilter: "./garrysmod/maps/rp_*.bsp"
+    fallbackMap: gm_construct
   onExitCommand: quit
   enabled: true
   rcon:

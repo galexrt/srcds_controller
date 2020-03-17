@@ -74,6 +74,12 @@ func (c *Config) Verify() error {
 		}
 	}
 
+	if c.Server.MapSelection == nil {
+		c.Server.MapSelection = &MapSelection{
+			Enabled: false,
+		}
+	}
+
 	if c.Checker == nil {
 		c.Checker = &Checker{
 			Interval: 30 * time.Second,
