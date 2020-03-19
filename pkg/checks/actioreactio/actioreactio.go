@@ -36,7 +36,6 @@ var (
 	defaultOpts = map[string]string{
 		"timeout": "10s",
 	}
-	foundCh = make(chan bool, 1)
 )
 
 func init() {
@@ -72,6 +71,9 @@ func Run(check config.Check, srv *config.Config) bool {
 
 	wg := &sync.WaitGroup{}
 
+	foundCh := make(chan bool, 1)
+	defer close(foundCh)
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -80,7 +82,7 @@ func Run(check config.Check, srv *config.Config) bool {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		checkStreamForString(stderr, `Unknown command "srcds_controller_check"`)
+		checkStreamForString(stderr, foundCh, `Unknown command "srcds_controller_check"`)
 	}()
 
 	if err := server.SendCommand(srv, []string{
@@ -102,7 +104,7 @@ func Run(check config.Check, srv *config.Config) bool {
 	return result
 }
 
-func checkStreamForString(stream io.ReadCloser, search string) {
+func checkStreamForString(stream io.ReadCloser, foundCh chan bool, search string) {
 	defer stream.Close()
 	scanner := bufio.NewScanner(stream)
 	for scanner.Scan() {

@@ -54,37 +54,24 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 		CheckForDockerEvents(stopCh)
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case result := <-resultCh:
-				resultCounter.Add(result)
-			case <-stopCh:
-				return
-			}
-		}
-	}()
-
 	for _, server := range userconfig.Cfg.Servers {
-		wg.Add(1)
-		go func(server *config.Config, stopCh <-chan struct{}) {
+		wg.Add(2)
+		go func(server *config.Config) {
 			defer wg.Done()
 			for _, check := range server.Server.Checks {
 				log.WithFields(logrus.Fields{
 					"server": server.Server.Name,
 					"check":  check.Name,
 				}).Info("starting check")
-				wg.Add(1)
 				go func(check config.Check, server *config.Config) {
 					defer wg.Done()
 					for {
 						log.Debugf("running check %s", check.Name)
+						checkResult := checks.Checks[check.Name](check, server)
 						resultCh <- Result{
 							Check:  check,
 							Server: server,
-							Return: checks.Checks[check.Name](check, server),
+							Return: checkResult,
 						}
 
 						splayTime := calculateTimeSplay(server.Checker.Splay.Start, server.Checker.Splay.End)
@@ -99,16 +86,25 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 					}
 				}(check, server)
 			}
-		}(server, stopCh)
+		}(server)
 	}
 
-	log.Infof("waiting for signal")
+	go func() {
+		select {
+		case result := <-resultCh:
+			resultCounter.Add(result)
+		}
+	}()
 
-	<-stopCh
-	log.Info("signal received, waiting on waitgroup ...")
-	wg.Wait()
-	log.Info("waitgroup successfully synced")
-	return nil
+	for {
+		select {
+		case <-stopCh:
+			wg.Wait()
+			close(resultCh)
+			log.Info("waitgroup successfully synced")
+			return nil
+		}
+	}
 }
 
 func calculateTimeSplay(begin int, end int) time.Duration {

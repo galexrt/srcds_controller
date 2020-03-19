@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -61,9 +62,11 @@ var serverLogsCmd = &cobra.Command{
 				defer wg.Done()
 				cmd.Wait()
 			}()
-			go func(serverName string) {
+			go func(serverName string, stream io.ReadCloser) {
 				defer wg.Done()
-				scanner := bufio.NewScanner(stdin)
+				defer stdin.Close()
+
+				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
 					if len(servers) > 1 {
@@ -75,10 +78,12 @@ var serverLogsCmd = &cobra.Command{
 					errors <- scanner.Err()
 					return
 				}
-			}(serverCfg.Server.Name)
-			go func(serverName string) {
+			}(serverCfg.Server.Name, stdin)
+			go func(serverName string, stream io.ReadCloser) {
 				defer wg.Done()
-				scanner := bufio.NewScanner(stderr)
+				defer stderr.Close()
+
+				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
 					if len(servers) > 1 {
@@ -92,7 +97,7 @@ var serverLogsCmd = &cobra.Command{
 					errors <- scanner.Err()
 					return
 				}
-			}(serverCfg.Server.Name)
+			}(serverCfg.Server.Name, stderr)
 		}
 
 		go func() {

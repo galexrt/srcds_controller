@@ -54,18 +54,23 @@ var checkerCmd = &cobra.Command{
 		stopCh := make(chan struct{})
 		sigCh := make(chan os.Signal)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		log.Infof("running checker")
+		log.Info("running checker")
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			checker.New().Run(stopCh)
+			if err := checker.New().Run(stopCh); err != nil {
+				log.Error("error during checker.Run(). %+v", err)
+			}
 		}()
 
+		log.Info("waiting for signal")
 		<-sigCh
 		close(stopCh)
 		wg.Wait()
+
+		log.Info("exiting checker")
 
 		return nil
 	},

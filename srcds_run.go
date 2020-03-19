@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
+	//"strings"
 	"time"
 )
 
@@ -16,10 +16,10 @@ func main() {
 			fmt.Printf("ERROR: %+v\n", err)
 			return
 		}
-		if strings.Contains(text, "srcds_controller_check") {
+		/*if strings.Contains(text, "srcds_controller_check") {
 			fmt.Fprintf(os.Stderr, `Unknown command "srcds_controller_check"`+"\n")
 			continue
-		}
-		fmt.Fprintf(os.Stderr, "%+v - %+v\n", time.Now(), text)
+		}*/
+		fmt.Fprintf(os.Stdout, "%+v - %+v\n", time.Now(), text)
 	}
 }
