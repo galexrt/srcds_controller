@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch srcds_controller",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/srcds_controller/",
+            "env": {},
+            "args": [
+                "checker",
+                "--config=${workspaceFolder}/.srcds_controller.yaml",
+                "--log-level=DEBUG",
+                "--dry-run=true"
+            ]
+        }
+    ]
+}
