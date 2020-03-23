@@ -90,9 +90,11 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 	}
 
 	go func() {
-		select {
-		case result := <-resultCh:
-			resultCounter.Add(result)
+		for {
+			select {
+			case result := <-resultCh:
+				resultCounter.Add(result)
+			}
 		}
 	}()
 

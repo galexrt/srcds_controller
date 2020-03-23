@@ -67,7 +67,9 @@ var checkerCmd = &cobra.Command{
 
 		log.Info("waiting for signal")
 		<-sigCh
+		log.Info("signal received")
 		close(stopCh)
+		log.Info("waiting for everything to exit")
 		wg.Wait()
 
 		log.Info("exiting checker")

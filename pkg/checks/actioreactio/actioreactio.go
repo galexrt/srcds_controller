@@ -72,7 +72,6 @@ func Run(check config.Check, srv *config.Config) bool {
 	wg := &sync.WaitGroup{}
 
 	foundCh := make(chan bool, 1)
-	defer close(foundCh)
 
 	wg.Add(1)
 	go func() {
@@ -101,6 +100,7 @@ func Run(check config.Check, srv *config.Config) bool {
 	}
 
 	wg.Wait()
+	close(foundCh)
 	return result
 }
 

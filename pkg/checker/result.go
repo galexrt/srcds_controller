@@ -61,10 +61,10 @@ func (r *ResultServerList) Add(result Result) {
 		r.results[result.Server.Server.Name] = map[string]*ResultCounter{}
 	}
 	if result.Return {
-		r.Unlock()
 		if _, ok := r.results[result.Server.Server.Name][result.Check.Name]; ok {
 			delete(r.results[result.Server.Server.Name], result.Check.Name)
 		}
+		r.Unlock()
 		return
 	}
 	now := time.Now()
