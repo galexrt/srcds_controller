@@ -26,12 +26,14 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var (
 	resultCounter = NewResultServerList()
 )
 
+// Checker
 type Checker struct {
 }
 
@@ -39,14 +41,18 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
+// New return a new Checker
 func New() *Checker {
 	return &Checker{}
 }
 
+// Run run checker logic
 func (c *Checker) Run(stopCh <-chan struct{}) error {
 	wg := sync.WaitGroup{}
 
 	resultCh := make(chan Result)
+
+	viper.Set("remove", true)
 
 	wg.Add(1)
 	go func() {

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
@@ -30,8 +29,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
-
-var lastAction = map[string]time.Time{}
 
 // CheckForDockerEvents check for docker container events and react to certain events
 func CheckForDockerEvents(stopCh <-chan struct{}) {
@@ -75,17 +72,16 @@ func CheckForDockerEvents(stopCh <-chan struct{}) {
 }
 
 func handleDockerEvent(event events.Message) error {
-	// TODO log action in lastAction map
 	eventAction := strings.ToLower(event.Action)
 	switch eventAction {
 	case "die":
 		if _, ok := event.Actor.Attributes["name"]; !ok {
-			return fmt.Errorf("docker event has no container name in it")
+			return fmt.Errorf("docker event: event has no container name in it")
 		}
 		serverName := event.Actor.Attributes["name"]
 		serverCfg, ok := userconfig.Cfg.Servers[serverName]
 		if !ok {
-			return fmt.Errorf("unable to find server config for ")
+			return fmt.Errorf("docker event: unable to find server config for %s", serverName)
 		}
 
 		if !serverCfg.Server.Enabled {
@@ -93,27 +89,15 @@ func handleDockerEvent(event events.Message) error {
 		}
 
 		if viper.GetBool("dry-run") {
-			log.WithField("server", serverName).Info("dry-run mode active, server restart")
+			log.WithField("server", serverName).Info("docker event: dry-run mode active, server restart")
 		} else {
-			log.WithField("server", serverName).Info("Restarting server")
+			log.WithField("server", serverName).Info("docker event: restarting server")
 			if err := server.Restart(serverCfg); err != nil {
 				return err
 			}
 		}
-	case "start":
-		if _, ok := event.Actor.Attributes["name"]; !ok {
-			return fmt.Errorf("docker event has no container name in it")
-		}
-		serverName := event.Actor.Attributes["name"]
-		serverCfg, ok := userconfig.Cfg.Servers[serverName]
-		if !ok {
-			return fmt.Errorf("unable to find server config for %s", serverName)
-		}
-		if !serverCfg.Server.Enabled {
-			return nil
-		}
 	default:
-		log.WithField("event_action", eventAction).Debugf("docker event isn't of our concern (not of type 'die')")
+		log.WithField("event_action", eventAction).Debugf("docker event: event isn't of our concern (not of type 'die')")
 	}
 	return nil
 }

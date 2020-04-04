@@ -128,6 +128,7 @@ func (r *ResultServerList) restartAction(check config.Check, serverCfg *config.C
 		if err := server.SendCommand(serverCfg, []string{"say", "SRCDS CHECKER RESTART MARKER"}); err != nil {
 			log.Error(err)
 		}
+
 		if err := server.Restart(serverCfg); err != nil {
 			log.WithField("server", serverCfg.Server.Name).Error(err)
 		}
