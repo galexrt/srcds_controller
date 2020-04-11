@@ -18,6 +18,7 @@ server:
     enabled: true
     fileFilter: "./garrysmod/maps/rp_*.bsp"
     fallbackMap: gm_construct
+  mountsDir: /home/gameserver/mount
   onExitCommand: quit
   enabled: true
   rcon:
