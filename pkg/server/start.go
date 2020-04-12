@@ -20,9 +20,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
@@ -40,9 +42,30 @@ func Start(serverCfg *config.Config) error {
 	if err != nil && !client.IsErrNotFound(err) {
 		return err
 	} else if err == nil && (cont.State.Status != "created" && cont.State.Status != "exited") {
-		return fmt.Errorf("server %s container is already existing / running", serverCfg.Server.Name)
+		return fmt.Errorf("server %s container is already created / running", serverCfg.Server.Name)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
+	defer cancel()
+
+	filter := filters.NewArgs()
+	filter.Add("reference", *serverCfg.Docker.Image)
+	images, err := DockerCli.ImageList(ctx, types.ImageListOptions{
+		Filters: filter,
+	})
+	if err != nil {
+		return err
+	}
+	if len(images) == 0 {
+		// Pull image if not available
+		image, err := DockerCli.ImagePull(ctx, *serverCfg.Docker.Image, types.ImagePullOptions{})
+		if err != nil {
+			return err
+		}
+		image.Close()
+	}
+
+	// Start or create container
 	var containerID string
 	if cont.ContainerJSONBase != nil && (cont.State.Status == "created" || cont.State.Status == "exited") {
 		containerID = cont.ID
@@ -125,7 +148,7 @@ func Start(serverCfg *config.Config) error {
 		// Disable Core dumps for the containers. GMod and other games seem to
 		// do core dumps for random reasons but we don't need them
 		contHostCfg.Ulimits = []*units.Ulimit{
-			&units.Ulimit{
+			{
 				Name: "core",
 				Hard: 0,
 			},
