@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -141,6 +142,27 @@ func Start(serverCfg *config.Config) error {
 				ReadOnly: true,
 			})
 		}
+
+		// Add additional mounts
+		for _, additionalMount := range serverCfg.Docker.AdditionalMounts {
+			aMount := strings.Split(additionalMount, ":")
+			if len(aMount) < 2 {
+				log.Errorf("failed to add additional mount '%s' to server %s ...", serverCfg.Docker.AdditionalMounts, serverCfg.Server.Name)
+				continue
+			}
+			var readOnly bool
+			if len(aMount) == 3 && aMount[2] == "ro" {
+				readOnly = true
+			}
+
+			contHostCfg.Mounts = append(contHostCfg.Mounts, mount.Mount{
+				Type:     mount.TypeBind,
+				Source:   aMount[0],
+				Target:   aMount[1],
+				ReadOnly: readOnly,
+			})
+		}
+
 		if serverCfg.Server.Resources != nil {
 			contHostCfg.Resources = *serverCfg.Server.Resources
 		}

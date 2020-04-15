@@ -18,6 +18,7 @@ package config
 
 // Docker config options for Docker connection and/or image used.
 type Docker struct {
-	Image      *string `yaml:"image"`
-	NamePrefix string  `yaml:"namePrefix"`
+	Image            *string  `yaml:"image"`
+	NamePrefix       string   `yaml:"namePrefix"`
+	AdditionalMounts []string `yaml:"additionalMounts"`
 }

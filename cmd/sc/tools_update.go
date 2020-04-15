@@ -52,7 +52,7 @@ var serverToolsUpdate = &cobra.Command{
 			commandArgs := []string{
 				"+login anonymous",
 				fmt.Sprintf("+force_install_dir %s", serverCfg.Server.Path),
-				"+app_update 4020", "validate",
+				fmt.Sprintf("+app_update %d", serverCfg.Server.GameID), "validate",
 				"+quit",
 			}
 			command := exec.Command(path.Join(home, "steamcmd/steamcmd.sh"), commandArgs...)
