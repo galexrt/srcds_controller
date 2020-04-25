@@ -69,6 +69,7 @@ var serverLogsCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
+					msg = colorMessage(msg)
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
 					}
@@ -86,6 +87,7 @@ var serverLogsCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
+					msg = colorMessage(msg)
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
 					}

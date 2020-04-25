@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
-	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -12,17 +11,16 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0
+	github.com/fatih/color v1.9.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/galexrt/go-rcon v0.0.0-20191004120034-77f90a2143f9
 	github.com/gdamore/tcell v1.3.0 // indirect
 	github.com/gin-gonic/gin v1.5.0
-	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/golang/protobuf v1.3.5 // indirect
 	github.com/google/gops v0.3.7
 	github.com/imdario/mergo v0.3.8
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
-	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pty v1.1.8
 	github.com/leodido/go-urn v1.2.0 // indirect
@@ -37,7 +35,6 @@ require (
 	github.com/prometheus/client_golang v1.5.0 // indirect
 	github.com/prometheus/common v0.9.1
 	github.com/prometheus/procfs v0.0.10 // indirect
-	github.com/shirou/gopsutil v2.20.3+incompatible // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
@@ -45,7 +42,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.6.2
-	github.com/xlab/treeprint v1.0.0 // indirect
 	go.uber.org/multierr v1.5.0 // indirect
 	go.uber.org/zap v1.14.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
@@ -56,5 +52,4 @@ require (
 	gopkg.in/ini.v1 v1.54.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
-	rsc.io/goversion v1.2.0 // indirect
 )

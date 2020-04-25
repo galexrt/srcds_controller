@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	"github.com/spf13/cobra"
@@ -47,4 +48,33 @@ func checkServers(cmd *cobra.Command, args []string) ([]*config.Config, error) {
 	}
 
 	return servers, nil
+}
+
+func colorMessage(msg string) string {
+	// Red
+	if strings.Contains(msg, "[ERROR") || strings.HasPrefix(msg, "!! ") {
+		msg = color.RedString(msg)
+	}
+	// Magenta
+	if strings.Contains(msg, "[UH-OH!]") {
+		msg = color.MagentaString(msg)
+	}
+	// Blue
+	if strings.HasPrefix(msg, "lua_run ") {
+		msg = color.BlueString(msg)
+	}
+	// Cyan
+	if strings.HasPrefix(msg, "ServerLog: ") || strings.HasPrefix(msg, "L ") {
+		msg = color.CyanString(msg)
+	}
+	// Green
+	if strings.Contains(msg, " connected (") {
+		msg = color.GreenString(msg)
+	}
+	// Yellow
+	if strings.Contains(msg, " was kicked because they are on the ban list") {
+		msg = color.YellowString(msg)
+	}
+
+	return msg
 }
