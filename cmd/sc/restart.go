@@ -61,7 +61,7 @@ var serverRestartCmd = &cobra.Command{
 
 func init() {
 	serverRestartCmd.PersistentFlags().DurationP("timeout", "t", 4*time.Second, "Server stop timeout before kill will be triggered")
-	serverRestartCmd.PersistentFlags().BoolP("remove", "r", true, "Remove the server container on restart")
+	serverRestartCmd.PersistentFlags().BoolP("remove", "r", false, "Remove the server container on restart")
 	viper.BindPFlag("timeout", serverRestartCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("remove", serverRestartCmd.PersistentFlags().Lookup("remove"))
 

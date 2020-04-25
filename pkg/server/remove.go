@@ -19,6 +19,7 @@ package server
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -48,6 +49,16 @@ func Remove(srvCfg *config.Config) error {
 
 	if err = DockerCli.ContainerRemove(context.Background(), cont.ID, types.ContainerRemoveOptions{}); err != nil {
 		return err
+	}
+
+	for i := 0; i < 10; i++ {
+		cont, err = DockerCli.ContainerInspect(context.Background(), util.GetContainerName(srvCfg.Docker.NamePrefix, srvCfg.Server.Name))
+		if err != nil {
+			if client.IsErrNotFound(err) {
+				break
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	log.Infof("removed server container %s", srvCfg.Server.Name)

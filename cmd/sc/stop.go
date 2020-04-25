@@ -67,7 +67,7 @@ var serverStopCmd = &cobra.Command{
 
 func init() {
 	serverStopCmd.PersistentFlags().DurationP("timeout", "t", 15*time.Second, "Server stop timeout before kill will be triggered")
-	serverStopCmd.PersistentFlags().BoolP("remove", "r", true, "Remove the server container before starting if it exists")
+	serverStopCmd.PersistentFlags().BoolP("remove", "r", false, "Remove the server container before starting if it exists")
 	viper.BindPFlag("timeout", serverStopCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("remove", serverStopCmd.PersistentFlags().Lookup("remove"))
 

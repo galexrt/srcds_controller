@@ -220,7 +220,7 @@ var serverConsoleCmd = &cobra.Command{
 
 func init() {
 	serverConsoleCmd.PersistentFlags().Bool("history", true, "If history should be enabled")
-	serverConsoleCmd.PersistentFlags().Duration("repaint-interval", 250*time.Millisecond, "Console repaint interval, do not change unless you know what you are doing!")
+	serverConsoleCmd.PersistentFlags().Duration("repaint-interval", 300*time.Millisecond, "Console repaint interval, do not change unless you know what you are doing!")
 	viper.BindPFlag("history", serverConsoleCmd.PersistentFlags().Lookup("history"))
 	viper.BindPFlag("repaint-interval", serverConsoleCmd.PersistentFlags().Lookup("repaint-interval"))
 

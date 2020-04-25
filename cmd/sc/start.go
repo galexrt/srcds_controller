@@ -66,7 +66,7 @@ var serverStartCmd = &cobra.Command{
 }
 
 func init() {
-	serverStartCmd.PersistentFlags().BoolP("remove", "r", true, "Remove the server container before starting if it exists")
+	serverStartCmd.PersistentFlags().BoolP("remove", "r", false, "Remove the server container before starting if it exists")
 	viper.BindPFlag("remove", serverStartCmd.PersistentFlags().Lookup("remove"))
 
 	rootCmd.AddCommand(serverStartCmd)

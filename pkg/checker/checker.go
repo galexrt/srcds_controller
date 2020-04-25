@@ -52,7 +52,7 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 
 	resultCh := make(chan Result)
 
-	viper.Set("remove", true)
+	viper.Set("remove", false)
 
 	wg.Add(1)
 	go func() {
