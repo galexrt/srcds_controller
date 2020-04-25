@@ -26,6 +26,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	"github.com/galexrt/srcds_controller/pkg/userconfig"
+	"github.com/google/gops/agent"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -45,6 +46,14 @@ var rootCmd = &cobra.Command{
 
 func main() {
 	syscall.Umask(7)
+
+	// Enable gops agent for troubleshooting
+	if err := agent.Listen(agent.Options{
+		ShutdownCleanup: true,
+	}); err != nil {
+		log.Fatal(err)
+	}
+
 	Execute()
 }
 

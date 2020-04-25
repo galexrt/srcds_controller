@@ -17,6 +17,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/galexrt/srcds_controller/pkg/userconfig"
 	"github.com/gin-gonic/gin"
+	"github.com/google/gops/agent"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -82,6 +83,13 @@ func init() {
 
 func main() {
 	syscall.Umask(7)
+
+	// Enable gops agent for troubleshooting
+	if err := agent.Listen(agent.Options{
+		ShutdownCleanup: true,
+	}); err != nil {
+		log.Fatal(err)
+	}
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

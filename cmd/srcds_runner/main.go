@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -38,6 +39,7 @@ import (
 	"github.com/galexrt/srcds_controller/pkg/chcloser"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/gin-gonic/gin"
+	"github.com/google/gops/agent"
 	"github.com/kr/pty"
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
@@ -69,7 +71,8 @@ func getRandomMap(filter string) (string, error) {
 		return "", err
 	}
 
-	// Example: rp_townsend_v2.bsp # the .bsp must be removed
+	// Example: rp_townsend_v2.bsp
+	// the .bsp must be removed
 	mapName := filepath.Base(matches[rand.Intn(len(matches))])
 	mapName = strings.TrimSuffix(mapName, filepath.Ext(mapName))
 
@@ -77,6 +80,13 @@ func getRandomMap(filter string) (string, error) {
 }
 
 func main() {
+	// Enable gops agent for troubleshooting
+	if err := agent.Listen(agent.Options{
+		ShutdownCleanup: true,
+	}); err != nil {
+		log.Fatal(err)
+	}
+
 	loggerProd, err := zap.NewDevelopment()
 	if err != nil {
 		fmt.Println(err)
