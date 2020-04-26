@@ -83,6 +83,7 @@ func main() {
 	// Enable gops agent for troubleshooting
 	if err := agent.Listen(agent.Options{
 		ShutdownCleanup: true,
+		ConfigDir:       "/tmp/agent",
 	}); err != nil {
 		log.Fatal(err)
 	}
