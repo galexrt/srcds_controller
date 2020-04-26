@@ -26,6 +26,7 @@ build: promu
 	@mkdir -p .build/linux-amd64
 	@\cp -fa srcds_runner .build/linux-amd64/srcds_runner
 	@$(PROMU) build --prefix $(PREFIX)
+	@\cp -fa sc srcds_cmdrelay srcds_controller .build/linux-amd64/
 
 crossbuild: promu
 	@$(PROMU) crossbuild
