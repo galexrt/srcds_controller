@@ -57,7 +57,7 @@ var serverStartRampUpCmd = &cobra.Command{
 
 func init() {
 	serverStartRampUpCmd.PersistentFlags().DurationP("delay", "d", 30*time.Second, "Delay between each server start")
-	serverStartRampUpCmd.PersistentFlags().BoolP("remove", "r", true, "Remove the server container before starting if it exists")
+	serverStartRampUpCmd.PersistentFlags().BoolP("remove", "r", false, "Remove the server container before starting if it exists")
 	viper.BindPFlag("delay", serverStartRampUpCmd.PersistentFlags().Lookup("delay"))
 	viper.BindPFlag("remove", serverStartRampUpCmd.PersistentFlags().Lookup("remove"))
 

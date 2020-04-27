@@ -155,7 +155,7 @@ func init() {
 	serverToolsNiceRestart.PersistentFlags().String("announce-seconds", "say Server Restart in %d second(s)!", "Command template to be sent to servers during seconds over countdown")
 	serverToolsNiceRestart.PersistentFlags().StringSlice("default-announce-times", []string{"EVERY_MINUTE", "45", "30", "15", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"}, "Default times  at which the left time should be announced")
 	serverToolsNiceRestart.PersistentFlags().StringSlice("additional-announce-times", []string{}, "At which additional times the left time should be announced")
-	serverToolsNiceRestart.PersistentFlags().BoolP("remove", "r", true, "Remove the server container on restart")
+	serverToolsNiceRestart.PersistentFlags().BoolP("remove", "r", false, "Remove the server container on restart")
 	viper.BindPFlag("duration", serverToolsNiceRestart.PersistentFlags().Lookup("duration"))
 	viper.BindPFlag("stop-only", serverToolsNiceRestart.PersistentFlags().Lookup("stop-only"))
 	viper.BindPFlag("announce-minutes", serverToolsNiceRestart.PersistentFlags().Lookup("announce-minutes"))

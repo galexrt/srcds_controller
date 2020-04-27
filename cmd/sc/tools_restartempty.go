@@ -129,7 +129,7 @@ var serverToolsRestartEmpty = &cobra.Command{
 func init() {
 	serverToolsRestartEmpty.PersistentFlags().DurationP("wait-time", "w", 15*time.Minute, "Time to wait for server container to exit")
 	serverToolsRestartEmpty.PersistentFlags().Bool("stop-only", false, "If servers should only be stopped and not restarted")
-	serverToolsRestartEmpty.PersistentFlags().BoolP("remove", "r", true, "Remove the server container on restart")
+	serverToolsRestartEmpty.PersistentFlags().BoolP("remove", "r", false, "Remove the server container on restart")
 	viper.BindPFlag("wait-time", serverToolsRestartEmpty.PersistentFlags().Lookup("wait-time"))
 	viper.BindPFlag("stop-only", serverToolsRestartEmpty.PersistentFlags().Lookup("stop-only"))
 	viper.BindPFlag("remove", serverToolsRestartEmpty.PersistentFlags().Lookup("remove"))
