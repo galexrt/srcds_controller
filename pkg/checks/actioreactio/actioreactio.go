@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	defaultOpts = map[string]string{
+	defaultOpts = config.CheckOpts{
 		"timeout": "10s",
 	}
 )
@@ -49,7 +49,7 @@ func Run(check config.Check, srv *config.Config) bool {
 	})
 
 	if err := mergo.Map(&check.Opts, defaultOpts); err != nil {
-		logger.Fatalf("failed to merge checks opts and rcon check defaults %s", srv.Server.Name)
+		logger.Fatalf("failed to merge checks opts and actioreactio check defaults %s", srv.Server.Name)
 	}
 
 	timeoutDuration, err := time.ParseDuration(check.Opts["timeout"])

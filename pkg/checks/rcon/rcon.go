@@ -27,9 +27,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var defaultOpts = map[string]string{
-	"timeout": "30s",
-}
+var (
+	defaultOpts = config.CheckOpts{
+		"timeout": "30s",
+	}
+)
 
 func init() {
 	checks.Checks["rcon"] = Run
