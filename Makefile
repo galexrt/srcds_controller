@@ -22,12 +22,9 @@ DOCKER_IMAGE_TAG  ?= runner-$(subst /,-,$(shell git rev-parse --abbrev-ref HEAD)
 all: format style vet test build
 
 build: promu
-	CGO_ENABLED=1 GOOS=linux go build -v -o srcds_runner ./cmd/srcds_runner/
-	@mkdir -p .build/linux-amd64
-	@\cp -fa srcds_runner .build/linux-amd64/srcds_runner
 	@$(PROMU) build --prefix $(PREFIX)
-	@if [ -f sc ] && [ -f srcds_cmdrelay ] && [ -f srcds_controller ]; then \
-		\cp -fa sc srcds_cmdrelay srcds_controller .build/linux-amd64/ ; \
+	@if [ -f sc ] && [ -f srcds_cmdrelay ] && [ -f srcds_controller ] && [ -f srcds_runner ]; then \
+		\cp -fa sc srcds_cmdrelay srcds_controller srcds_runner .build/linux-amd64/ ; \
 	fi
 
 crossbuild: promu
