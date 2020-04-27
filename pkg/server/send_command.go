@@ -49,6 +49,8 @@ func SendCommand(serverCfg *config.Config, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error during command exec send to server %s. %+v", serverCfg.Server.Name, err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode == http.StatusOK {
 		log.Infof("successfully sent command to server %s", serverCfg.Server.Name)
 		return nil
@@ -58,7 +60,6 @@ func SendCommand(serverCfg *config.Config, args []string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to read body from send command response")
 	}
-	defer resp.Body.Close()
 
 	return fmt.Errorf("error during sending of command to srcds_runner for server %s (response body: %s)", serverCfg.Server.Name, strings.ReplaceAll(string(out), "\n", "\\n"))
 }
