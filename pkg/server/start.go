@@ -74,8 +74,7 @@ func Start(serverCfg *config.Config) error {
 		serverDir := serverCfg.Server.Path
 		mountDir := serverCfg.Server.MountsDir
 
-		var hostname string
-		hostname, err = os.Hostname()
+		hostname, err := os.Hostname()
 		if err != nil {
 			return err
 		}
@@ -85,10 +84,12 @@ func Start(serverCfg *config.Config) error {
 				"app":        "gameserver",
 				"managed-by": "srcds_controller",
 			},
-			Env:         []string{},
-			AttachStdin: true,
+			Env: []string{
+				"GOPS_CONFIG_DIR=/tmp/agent",
+			},
+			AttachStdin: false,
 			Tty:         false,
-			OpenStdin:   true,
+			OpenStdin:   false,
 			Hostname:    hostname,
 			User:        fmt.Sprintf("%d:%d", serverCfg.Server.RunOptions.UID, serverCfg.Server.RunOptions.GID),
 			Image:       *serverCfg.Docker.Image,

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -36,11 +35,14 @@ import (
 
 	"github.com/acarl005/stripansi"
 	"github.com/docker/docker/api/types/strslice"
+	"github.com/fsnotify/fsnotify"
 	"github.com/galexrt/srcds_controller/pkg/chcloser"
 	"github.com/galexrt/srcds_controller/pkg/config"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/google/gops/agent"
 	"github.com/kr/pty"
+	"github.com/prometheus/common/version"
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -79,34 +81,13 @@ func getRandomMap(filter string) (string, error) {
 	return mapName, nil
 }
 
-func main() {
-	// Enable gops agent for troubleshooting
-	if err := agent.Listen(agent.Options{
-		ShutdownCleanup: true,
-		ConfigDir:       "/tmp/agent",
-	}); err != nil {
-		log.Fatal(err)
-	}
-
-	loggerProd, err := zap.NewDevelopment()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer loggerProd.Sync()
-	logger = loggerProd.Sugar()
-
-	config.Cfg = &config.Config{}
-	if err := loadConfig(); err != nil {
-		logger.Fatal(err)
-	}
-	if err := config.Cfg.Verify(); err != nil {
-		logger.Fatal(err)
-	}
-
+func setupServerArgs() []string {
 	cfgMutex.Lock()
+	defer cfgMutex.Unlock()
+
 	syscall.Umask(config.Cfg.General.Umask)
 
+	var err error
 	chosenMap := config.Cfg.Server.MapSelection.FallbackMap
 	if config.Cfg.Server.MapSelection.Enabled {
 		chosenMap, err = getRandomMap(config.Cfg.Server.MapSelection.FileFilter)
@@ -131,13 +112,44 @@ func main() {
 		arg = strings.Replace(arg, "%MAP_RANDOM%", chosenMap, -1)
 		contArgs = append(contArgs, arg)
 	}
-	cfgMutex.Unlock()
 
-	logger.Infof("starting srcds_runner on socket with following cmd and args: %+v", contArgs)
+	return contArgs
+}
 
-	if len(contArgs) < 2 {
-		logger.Fatal("not enough arguments for server must have at least 2")
+func main() {
+	// Enable gops agent for troubleshooting
+	if err := agent.Listen(agent.Options{
+		ShutdownCleanup: true,
+		ConfigDir:       "/tmp/agent",
+	}); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
+
+	loggerProd, err := zap.NewDevelopment()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer loggerProd.Sync()
+	logger = loggerProd.Sugar()
+
+	logger.Infof("starting srcds_runner %s", version.Info())
+	logger.Infof("build context %s", version.BuildContext())
+
+	cfg, err := loadConfig()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	if err := cfg.Verify(); err != nil {
+		logger.Fatal(err)
+	}
+	cfgMutex.Lock()
+	defer cfgMutex.Unlock()
+	config.Cfg = cfg
+
+	contArgs := setupServerArgs()
+	logger.Infof("starting gameserver with cmd and args: %+v", contArgs)
 
 	sigs := make(chan os.Signal, 1)
 	stopCh := make(chan struct{})
@@ -146,23 +158,19 @@ func main() {
 
 	wg := sync.WaitGroup{}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer func() {
-		if !chancloser.IsClosed {
-			cancel()
-		}
-	}()
-
+	// HTTP server config and run
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 
 	r := gin.New()
+	pprof.Register(r)
 	r.Use(gin.Recovery())
-
 	r.GET("/", cmdExecute)
 	r.POST("/", cmdExecute)
-
 	go listenAndServe(r)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	cmd := exec.CommandContext(ctx, contArgs[0], contArgs[1:]...)
 	cmd.Env = os.Environ()
@@ -170,64 +178,51 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	defer func() {
-		if tty == nil {
-			return
-		}
-		tty.Close()
-	}()
 
-	wg.Add(1)
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		logger.Info("beginning to stream logs from tty console")
+		logger.Info("beginning to stream logs from console")
+		// copyLogs "automatically" returns when the tty has been closed
+		// and all output has been processed
 		copyLogs(tty)
 	}()
-
-	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		cmd.Wait()
-		chancloser.Close(stopCh)
+		configWatchAndReconcile(stopCh)
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		reconciliation(stopCh)
-	}()
+	logger.Info("waiting for signals")
+	<-sigs
+	close(stopCh)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		select {
-		case <-sigs:
-		case <-stopCh:
+	consoleMutex.Lock()
+
+	if tty != nil {
+		cfgMutex.Lock()
+		onExitCommand := config.Cfg.Server.OnExitCommand
+		cfgMutex.Unlock()
+		if onExitCommand != "" {
+			logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
+
+			tty.Write([]byte("\n" + onExitCommand + "\n"))
+			time.Sleep(5 * time.Second)
 		}
+	}
 
-		consoleMutex.Lock()
+	time.Sleep(500 * time.Millisecond)
 
-		if tty != nil {
-			cfgMutex.Lock()
-			onExitCommand := config.Cfg.Server.OnExitCommand
-			cfgMutex.Unlock()
-			if onExitCommand != "" {
-				logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
+	if cmd.Process != nil {
+		cmd.Process.Signal(syscall.SIGTERM)
+	}
 
-				tty.Write([]byte("\n" + onExitCommand + "\n"))
-				time.Sleep(5 * time.Second)
-			}
-		}
+	cancel()
 
-		time.Sleep(500 * time.Millisecond)
+	if tty != nil {
+		tty.Close()
+	}
 
-		if cmd.Process != nil {
-			cmd.Process.Signal(syscall.SIGTERM)
-		}
-
-		cancel()
-	}()
-
+	logger.Info("waiting for everything to exit")
 	wg.Wait()
 	logger.Info("exiting srcds_runner")
 }
@@ -295,45 +290,81 @@ func copyLogs(r io.Reader) error {
 	}
 }
 
-func loadConfig() error {
+func loadConfig() (*config.Config, error) {
 	out, err := ioutil.ReadFile(ConfigFileName)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	cfgMutex.Lock()
-	defer cfgMutex.Unlock()
-	if err := yaml.Unmarshal(out, config.Cfg); err != nil {
-		return err
+
+	var cfg *config.Config
+	if err := yaml.Unmarshal(out, cfg); err != nil {
+		return nil, err
 	}
-	return config.Cfg.Verify()
+
+	return cfg, nil
 }
 
-// reconciliation loop runs every 5 minutes to keep the RCON password in sync
-func reconciliation(stopCh chan struct{}) {
-	for {
-		if err := loadConfig(); err != nil {
-			logger.Fatal(err)
-		}
-		cfgMutex.Lock()
-		serverCfg := config.Cfg.Server
-		cfgMutex.Unlock()
-		if serverCfg == nil {
-			logger.Error("no / empty config found for server")
-		} else {
-			consoleMutex.Lock()
-			func() {
-				defer consoleMutex.Unlock()
-				if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", serverCfg.RCON.Password))); err != nil {
-					logger.Errorf("failed to write rcon_password command to server console. %+v", err)
+// configWatchAndReconcile loop runs every 5 minutes to keep the RCON password in sync
+func configWatchAndReconcile(stopCh chan struct{}) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Errorf("error creating fsnotify watcher for config. %w", err)
+		return
+	}
+	defer watcher.Close()
+
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
 				}
-			}()
+
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					checkIfConfigChanged()
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				logger.Errorf("error during config fsnotify. %w", err)
+			}
 		}
-		select {
-		case <-time.After(5 * time.Minute):
-		case <-stopCh:
-			return
+	}()
+
+	if err = watcher.Add(ConfigFileName); err != nil {
+		logger.Errorf("failed to add watch for config file. %w", err)
+		return
+	}
+
+	select {
+	case <-stopCh:
+		return
+	}
+}
+
+func checkIfConfigChanged() {
+	newCfg, err := loadConfig()
+	if err != nil {
+		logger.Errorf("failed to reload config. %w", err)
+	}
+	if err := config.Cfg.Verify(); err != nil {
+		logger.Errorf("failed to verify reloaded config. %w", err)
+	}
+
+	if config.Cfg.Server.RCON.Password != newCfg.Server.RCON.Password {
+		consoleMutex.Lock()
+		defer consoleMutex.Unlock()
+		if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", newCfg.Server.RCON.Password))); err != nil {
+			logger.Errorf("failed to write rcon_password command to server console. %+v", err)
 		}
 	}
+
+	logger.Info("config file has been reloaded")
+	cfgMutex.Lock()
+	defer cfgMutex.Unlock()
+	config.Cfg = newCfg
 }
 
 func cleanOutput(in string) string {
