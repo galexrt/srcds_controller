@@ -24,7 +24,7 @@ import (
 	"path"
 
 	"github.com/acarl005/stripansi"
-	"github.com/kr/pty"
+	"github.com/creack/pty"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -34,6 +35,7 @@ import (
 	"time"
 
 	"github.com/acarl005/stripansi"
+	"github.com/creack/pty"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/fsnotify/fsnotify"
 	"github.com/galexrt/srcds_controller/pkg/chcloser"
@@ -41,7 +43,6 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/google/gops/agent"
-	"github.com/kr/pty"
 	"github.com/prometheus/common/version"
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
@@ -120,12 +121,11 @@ func main() {
 	// Enable gops agent for troubleshooting
 	if err := agent.Listen(agent.Options{
 		ShutdownCleanup: true,
-		ConfigDir:       "/tmp/agent",
 	}); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
+	// Setup logging
 	loggerProd, err := zap.NewDevelopment()
 	if err != nil {
 		fmt.Println(err)
@@ -137,6 +137,7 @@ func main() {
 	logger.Infof("starting srcds_runner %s", version.Info())
 	logger.Infof("build context %s", version.BuildContext())
 
+	// Load config
 	cfg, err := loadConfig()
 	if err != nil {
 		logger.Fatal(err)
@@ -145,8 +146,8 @@ func main() {
 		logger.Fatal(err)
 	}
 	cfgMutex.Lock()
-	defer cfgMutex.Unlock()
 	config.Cfg = cfg
+	cfgMutex.Unlock()
 
 	contArgs := setupServerArgs()
 	logger.Infof("starting gameserver with cmd and args: %+v", contArgs)
@@ -176,7 +177,7 @@ func main() {
 	cmd.Env = os.Environ()
 	tty, err = pty.Start(cmd)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Fatalf("failed to run gameserver command in tty. %w", err)
 	}
 
 	wg.Add(2)
@@ -296,12 +297,12 @@ func loadConfig() (*config.Config, error) {
 		return nil, err
 	}
 
-	var cfg *config.Config
-	if err := yaml.Unmarshal(out, cfg); err != nil {
+	var cfg config.Config
+	if err := yaml.Unmarshal(out, &cfg); err != nil {
 		return nil, err
 	}
 
-	return cfg, nil
+	return &cfg, nil
 }
 
 // configWatchAndReconcile loop runs every 5 minutes to keep the RCON password in sync

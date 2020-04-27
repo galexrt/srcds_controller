@@ -97,9 +97,11 @@ var serverToolsNiceRestart = &cobra.Command{
 							errorOccured = true
 						}
 
-						if err := server.Remove(cfg); err != nil {
-							log.Errorf("error during server container removal. %+v", err)
-							errorOccured = true
+						if viper.GetBool("remove") {
+							if err := server.Remove(cfg); err != nil {
+								log.Errorf("error during server container removal. %+v", err)
+								errorOccured = true
+							}
 						}
 
 						if !viper.GetBool("stop-only") {
