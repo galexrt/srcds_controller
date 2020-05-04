@@ -31,6 +31,10 @@ var serverStartRampUpCmd = &cobra.Command{
 	Short:             "Ramp up servers one by one with delay between",
 	PersistentPreRunE: initDockerCli,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !viper.IsSet("remove") {
+			viper.Set("remove", true)
+		}
+
 		servers, err := checkServers(cmd, args)
 		if err != nil {
 			return err
@@ -57,9 +61,7 @@ var serverStartRampUpCmd = &cobra.Command{
 
 func init() {
 	serverStartRampUpCmd.PersistentFlags().DurationP("delay", "d", 30*time.Second, "Delay between each server start")
-	serverStartRampUpCmd.PersistentFlags().BoolP("remove", "r", false, "Remove the server container before starting if it exists")
 	viper.BindPFlag("delay", serverStartRampUpCmd.PersistentFlags().Lookup("delay"))
-	viper.BindPFlag("remove", serverStartRampUpCmd.PersistentFlags().Lookup("remove"))
 
 	serverStartCmd.AddCommand(serverStartRampUpCmd)
 }

@@ -74,9 +74,11 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&globalCfgFile, "global-config", config.GlobalConfigPath, "global config file (default is "+config.GlobalConfigPath+")")
 	rootCmd.PersistentFlags().Bool("debug", false, "If debug info should be shown")
 	rootCmd.PersistentFlags().BoolP(AllServers, "a", false, "If all servers should be used")
+	rootCmd.PersistentFlags().BoolP("remove", "r", false, "Remove the server container before starting if it exists (if applicable to the subcommand used)")
 
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 	viper.BindPFlag(AllServers, rootCmd.PersistentFlags().Lookup(AllServers))
+	viper.BindPFlag("remove", rootCmd.PersistentFlags().Lookup("remove"))
 }
 
 // initConfig reads in config file and ENV variables if set.
