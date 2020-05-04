@@ -134,7 +134,6 @@ func Start(serverCfg *config.Config) error {
 				},
 			},
 			NetworkMode: "host",
-			PidMode:     "host",
 		}
 		if mountDir != "" {
 			contHostCfg.Mounts = append(contHostCfg.Mounts, mount.Mount{

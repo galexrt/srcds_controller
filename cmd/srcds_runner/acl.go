@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"net/http"
 	"os/user"
 	"strconv"
 
@@ -11,8 +10,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func checkACL(r *http.Request) (bool, error) {
-	conn := GetConn(r)
+func checkACL(conn net.Conn) (bool, error) {
 	if unixConn, isUnix := conn.(*net.UnixConn); isUnix {
 		f, err := unixConn.File()
 		if err != nil {

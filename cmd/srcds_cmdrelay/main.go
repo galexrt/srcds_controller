@@ -32,8 +32,7 @@ var (
 	home          string
 	logger        *zap.Logger
 	rootCmd       = &cobra.Command{
-		Use:   "srcds_cmdrelay",
-		Short: "",
+		Use: "srcds_cmdrelay",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			logger, err = zap.NewDevelopment()
@@ -167,6 +166,7 @@ func handler(c *gin.Context) {
 		logger.Error("failed to run command. error during post", zap.String("command", command), zap.String("screen", screen), zap.Error(err))
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
 		c.String(http.StatusOK, "success running command")

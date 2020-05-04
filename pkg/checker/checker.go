@@ -33,7 +33,7 @@ var (
 	resultCounter = NewResultServerList()
 )
 
-// Checker
+// Checker checker struct
 type Checker struct {
 }
 
@@ -61,7 +61,7 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 	}()
 
 	for _, server := range userconfig.Cfg.Servers {
-		wg.Add(2)
+		wg.Add(1)
 		go func(server *config.Config) {
 			defer wg.Done()
 			for _, check := range server.Server.Checks {
@@ -69,6 +69,7 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 					"server": server.Server.Name,
 					"check":  check.Name,
 				}).Info("starting check")
+				wg.Add(1)
 				go func(check config.Check, server *config.Config) {
 					defer wg.Done()
 					for {
@@ -104,15 +105,11 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 		}
 	}()
 
-	for {
-		select {
-		case <-stopCh:
-			wg.Wait()
-			close(resultCh)
-			log.Info("waitgroup successfully synced")
-			return nil
-		}
-	}
+	<-stopCh
+	wg.Wait()
+	close(resultCh)
+	log.Info("waitgroup successfully synced")
+	return nil
 }
 
 func calculateTimeSplay(begin int, end int) time.Duration {

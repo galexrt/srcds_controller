@@ -106,6 +106,7 @@ func Run(check config.Check, srv *config.Config) bool {
 
 func checkStreamForString(stream io.ReadCloser, foundCh chan bool, search string) {
 	defer stream.Close()
+
 	scanner := bufio.NewScanner(stream)
 	for scanner.Scan() {
 		text := scanner.Text()
@@ -119,5 +120,6 @@ func checkStreamForString(stream io.ReadCloser, foundCh chan bool, search string
 	if err := scanner.Err(); err != nil {
 		log.Debugf("error during logs line scanning. %+v", err)
 	}
+
 	foundCh <- false
 }

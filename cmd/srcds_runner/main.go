@@ -38,7 +38,6 @@ import (
 	"github.com/creack/pty"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/fsnotify/fsnotify"
-	"github.com/galexrt/srcds_controller/pkg/chcloser"
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -58,7 +57,6 @@ const (
 var (
 	logger       *zap.SugaredLogger
 	cfgMutex     = &sync.Mutex{}
-	chancloser   = &chcloser.ChannelCloser{}
 	tty          *os.File
 	out          io.Reader
 	consoleMutex sync.Mutex
@@ -229,7 +227,7 @@ func main() {
 }
 
 func cmdExecute(c *gin.Context) {
-	ok, err := checkACL(c.Request)
+	ok, err := checkACL(GetConn(c.Request))
 	if err != nil {
 		c.String(http.StatusForbidden, fmt.Sprintf("permission denied. %+v", err))
 		return
@@ -305,7 +303,7 @@ func loadConfig() (*config.Config, error) {
 	return &cfg, nil
 }
 
-// configWatchAndReconcile loop runs every 5 minutes to keep the RCON password in sync
+// configWatchAndReconcile watches the config file
 func configWatchAndReconcile(stopCh chan struct{}) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -314,34 +312,31 @@ func configWatchAndReconcile(stopCh chan struct{}) {
 	}
 	defer watcher.Close()
 
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					checkIfConfigChanged()
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				logger.Errorf("error during config fsnotify. %w", err)
-			}
-		}
-	}()
-
 	if err = watcher.Add(ConfigFileName); err != nil {
 		logger.Errorf("failed to add watch for config file. %w", err)
 		return
 	}
 
-	select {
-	case <-stopCh:
-		return
+	for {
+		select {
+		case <-stopCh:
+			logger.Info("config watch and reconcile has been stopped")
+		case <-time.After(5 * time.Minute):
+			logger.Info("config watch and reconcile is still running")
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				checkIfConfigChanged()
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			logger.Errorf("error during config fsnotify. %w", err)
+		}
 	}
 }
 

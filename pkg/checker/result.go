@@ -27,34 +27,34 @@ import (
 	"github.com/spf13/viper"
 )
 
-// ResultCounter
+// ResultCounter result counter to count the results success or failure
 type ResultCounter struct {
 	Count     int64
 	FirstTime time.Time
 	LastTime  time.Time
 }
 
-// ResultServerList
+// ResultServerList result counter per server list
 type ResultServerList struct {
 	sync.RWMutex
 	results map[string]map[string]*ResultCounter
 }
 
-// Result
+// Result server check result
 type Result struct {
 	Check  config.Check
 	Server *config.Config
 	Return bool
 }
 
-// NewResultServerList
+// NewResultServerList return new result counter server lit
 func NewResultServerList() *ResultServerList {
 	return &ResultServerList{
 		results: map[string]map[string]*ResultCounter{},
 	}
 }
 
-// Add
+// Add add a new result to the result counter server list
 func (r *ResultServerList) Add(result Result) {
 	r.Lock()
 	if _, ok := r.results[result.Server.Server.Name]; !ok {
