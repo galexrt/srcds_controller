@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/pkg/errors"
@@ -36,7 +37,9 @@ func SendCommand(serverCfg *config.Config, args []string) error {
 	log.Infof("sending command '%s' to server %s", strings.Join(args, " "), serverCfg.Server.Name)
 
 	httpc := http.Client{
+		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
+			IdleConnTimeout: 15 * time.Second,
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 				return net.Dial("unix", path.Join(serverCfg.Server.Path, ".srcds_runner.sock"))
 			},

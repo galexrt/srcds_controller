@@ -151,7 +151,9 @@ func handler(c *gin.Context) {
 	}
 
 	httpc := http.Client{
+		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
+			IdleConnTimeout: 15 * time.Second,
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 				return net.Dial("unix", path.Join(serverCfg.Server.Path, ".srcds_runner.sock"))
 			},

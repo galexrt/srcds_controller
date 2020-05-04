@@ -64,6 +64,7 @@ var checkerCmd = &cobra.Command{
 				log.Error("error during checker.Run(). %+v", err)
 			}
 		}()
+
 		// TODO Add "maintenance" tasks such as removing unused images and so on
 
 		log.Info("waiting for signal")

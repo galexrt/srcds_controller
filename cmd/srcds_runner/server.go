@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
@@ -80,6 +81,11 @@ func listenAndServe(r *gin.Engine) {
 	defer os.Remove(ListenAddress)
 
 	server := http.Server{
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		IdleTimeout:       25 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+
 		ConnContext: SaveConnInContext,
 	}
 	if err := server.Serve(l); err != nil {
