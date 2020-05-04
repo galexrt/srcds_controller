@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -58,12 +59,17 @@ func Start(serverCfg *config.Config) error {
 		return err
 	}
 	if len(images) == 0 {
-		// Pull image if not available
-		image, err := DockerCli.ImagePull(ctx, *serverCfg.Docker.Image, types.ImagePullOptions{})
+		log.Info("gameserver container image not on machine, trying to pull now ...")
+		// Pull image if not available using `docker` command
+		cmd := exec.CommandContext(ctx, "docker", "pull", *serverCfg.Docker.Image)
+		cmd.Env = os.Environ()
+		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return err
+			log.Errorf("failed to pull %s container image for gameserver. %w", *serverCfg.Docker.Image, err)
+		} else {
+			log.Info("successfully pulled gameserver container image")
 		}
-		image.Close()
+		log.Infof("gameserver container image pull command output: %s", string(out))
 	}
 
 	// Start or create container
