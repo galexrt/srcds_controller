@@ -19,3 +19,7 @@ Controller component which can check on the Gameservers and if necessary restart
 ### srcds_runner
 
 Component inside the container running the Gameserver process. Reading from stdin as the "normal" Gameserver process.
+
+### srcds_webber
+
+WIP Webinterface for the gameserver management.

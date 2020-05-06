@@ -23,8 +23,8 @@ all: format style vet test build
 
 build: promu
 	@$(PROMU) build --prefix $(PREFIX)
-	@if [ -f sc ] && [ -f srcds_cmdrelay ] && [ -f srcds_controller ] && [ -f srcds_runner ]; then \
-		\cp -fa sc srcds_cmdrelay srcds_controller srcds_runner .build/linux-amd64/ ; \
+	@if [ -f sc ] && [ -f srcds_cmdrelay ] && [ -f srcds_controller ] && [ -f srcds_runner ] && [ -f srcds_webber ]; then \
+		\cp -fa sc srcds_cmdrelay srcds_controller srcds_runner srcds_webber .build/linux-amd64/ ; \
 	fi
 
 crossbuild: promu
