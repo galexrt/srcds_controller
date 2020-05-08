@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//go:generate go get -u github.com/GeertJohan/go.rice/rice
+// go:generate go get -u github.com/GeertJohan/go.rice/rice
 //go:generate rice embed-go -i github.com/galexrt/srcds_controller/cmd/srcds_webber
 
 package main
@@ -28,7 +28,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/casbin/casbin/v2"
 	"github.com/gorilla/sessions"
+	casbin_mw "github.com/labstack/echo-contrib/casbin"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -69,10 +71,15 @@ func main() {
 		fmt.Println(err)
 		os.Exit(2)
 	}
-	if err = yaml.Unmarshal(out, cfg); err != nil {
+	cfgFile := &Config{}
+	if err = yaml.Unmarshal(out, cfgFile); err != nil {
 		fmt.Println(err)
 		os.Exit(2)
 	}
+	cfg = cfgFile
+
+	// Setup config
+	setupOAuth2Config()
 
 	e := echo.New()
 	e.HideBanner = true
@@ -80,6 +87,14 @@ func main() {
 
 	e.Use(middleware.Logger())
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
+
+	// Casbin setup
+	enforcer, err := casbin.NewEnforcer("casbin_auth_model.conf", "casbin_auth_policy.csv")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(2)
+	}
+	e.Use(casbin_mw.Middleware(enforcer))
 
 	routesAuth(e)
 
@@ -97,10 +112,14 @@ func main() {
 		if err != nil {
 			return err
 		}
-		if userInfo != nil {
-			return c.HTML(http.StatusOK, fmt.Sprintf("UserInfo: %+v\n", userInfo))
+		if userInfo == nil {
+			return c.Redirect(http.StatusTemporaryRedirect, "/api/auth/v1/login")
 		}
-		return c.Redirect(http.StatusTemporaryRedirect, "/api/auth/v1/login")
+
+		return c.Render(http.StatusOK, "index", &Page{
+			Title:    "Home",
+			UserInfo: userInfo,
+		})
 	})
 
 	e.Logger.Fatal(e.Start(":8081"))

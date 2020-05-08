@@ -6,6 +6,7 @@ require (
 	github.com/GeertJohan/go.rice v1.0.0
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+	github.com/casbin/casbin/v2 v2.4.1
 	github.com/creack/pty v1.1.9
 	github.com/daaku/go.zipexe v1.0.1 // indirect
 	github.com/davecgh/go-spew v1.1.1

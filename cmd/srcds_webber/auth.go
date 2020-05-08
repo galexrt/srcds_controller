@@ -43,6 +43,10 @@ type UserInfo struct {
 }
 
 var (
+	oauthConfig *oauth2.Config
+)
+
+func setupOAuth2Config() {
 	oauthConfig = &oauth2.Config{
 		RedirectURL:  cfg.OAuth2Config.RedirectURL,
 		ClientID:     cfg.OAuth2Config.ClientID,
@@ -53,12 +57,17 @@ var (
 			TokenURL: cfg.OAuth2Config.TokenURL,
 		},
 	}
-)
+}
 
 func routesAuth(e *echo.Echo) {
 	auth := e.Group("/api/auth/v1")
+	auth.GET("/", func(c echo.Context) error {
+		return c.Redirect(http.StatusTemporaryRedirect, "login")
+	})
 	auth.GET("/login", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "api/auth/v1/login.html", "Login")
+		return c.Render(http.StatusOK, "api/auth/v1/login.html", &Page{
+			Title: "Login",
+		})
 	})
 	auth.GET("/logout", func(c echo.Context) error {
 		sess, err := session.Get("srcds_webber", c)
@@ -108,8 +117,11 @@ func routesAuth(e *echo.Echo) {
 			HttpOnly: true,
 		}
 		ourState, ok := sess.Values["openid-state"]
+
+		fmt.Printf("Outstate: %+v - UserState: %+v\n", ourState.(string), c.FormValue("state"))
+
 		if !ok {
-			return c.Redirect(http.StatusTemporaryRedirect, "/openid")
+			return c.String(http.StatusForbidden, "Wrong OpenID State")
 		}
 
 		content, err := getUserInfo(ourState.(string), c.FormValue("state"), c.FormValue("code"))
@@ -146,7 +158,7 @@ func checkForUserInfo(c echo.Context) (*UserInfo, error) {
 	}
 	data, ok := sess.Values["userinfo"]
 	if !ok {
-		return nil, fmt.Errorf("no userinfo in session")
+		return nil, nil
 	}
 	out, ok := data.([]byte)
 	if !ok {

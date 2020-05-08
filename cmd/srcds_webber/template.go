@@ -58,3 +58,9 @@ func getTemplateRenderer() *Template {
 		T: templates,
 	}
 }
+
+// Page page tempalte info
+type Page struct {
+	Title    string
+	UserInfo *UserInfo
+}

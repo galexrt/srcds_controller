@@ -61,6 +61,10 @@ promu:
 		GO111MODULE=off \
 		$(GO) get -u github.com/prometheus/promu
 
+srcds_run:
+	$(GO) build -o srcds_run ./srcds_run.go
+	chmod 755 srcds_run
+
 style:
 	@echo ">> checking code style"
 	@! gofmt -d $(shell find . -path ./vendor -prune -o -name '*.go' -print) | grep '^'

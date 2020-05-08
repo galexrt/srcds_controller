@@ -1,13 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
-</head>
-<body>
-    <h1>Login</h1>
-    <hr>
-    <form method="POST" action="/api/auth/v1/openid">
-        <input type="submit" value="Start OpenID Login">
-    </form>
-    </body>
-</html>
+{{ template "baseof" . }}
+
+{{ define "main" }}
+<h1>Login</h1>
+<hr>
+<form method="POST" action="/api/auth/v1/openid">
+    <input type="submit" value="Start OpenID Login">
+</form>
+{{ end }}

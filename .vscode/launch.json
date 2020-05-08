@@ -24,7 +24,9 @@
             "env": {
                 "SESSION_SECRET": "dtklArfmZUU2__BiUBwcXU1o",
             },
-            "args": [],
+            "args": [
+                "--config=${workspaceFolder}/.srcds_webber.yaml"
+            ],
             "cwd": "${workspaceFolder}/cmd/srcds_webber/"
         }
     ]

@@ -9,65 +9,91 @@ import (
 func init() {
 
 	// define files
-	file5 := &embedded.EmbeddedFile{
-		Filename:    "api/auth/v1/login.html",
-		FileModTime: time.Unix(1588786805, 0),
+	file3 := &embedded.EmbeddedFile{
+		Filename:    "_partials/baseof.html",
+		FileModTime: time.Unix(1588836463, 0),
 
-		Content: string("<!DOCTYPE html>\n<html>\n<head>\n    <title>Login</title>\n</head>\n<body>\n    <h1>Login</h1>\n    <hr>\n    <form method=\"POST\" action=\"/api/auth/v1/openid\">\n        <input type=\"submit\" value=\"Start OpenID Login\">\n    </form>\n    </body>\n</html>\n"),
+		Content: string("{{ define \"baseof\" }}\n<!DOCTYPE html>\n<html>\n{{ template \"head\" . }}\n<body>\n    {{ template \"main\" . }}\n</body>\n</html>\n{{ end }}\n"),
+	}
+	file4 := &embedded.EmbeddedFile{
+		Filename:    "_partials/head.html",
+		FileModTime: time.Unix(1588835726, 0),
+
+		Content: string("{{ define \"head\" }}\n    <head>\n        <!-- TODO -->\n        <title>{{ .Title }}</title>\n    </head>\n{{ end }}"),
+	}
+	file8 := &embedded.EmbeddedFile{
+		Filename:    "api/auth/v1/login.html",
+		FileModTime: time.Unix(1588836407, 0),
+
+		Content: string("{{ template \"baseof\" . }}\n\n{{ define \"main\" }}\n<h1>Login</h1>\n<hr>\n<form method=\"POST\" action=\"/api/auth/v1/openid\">\n    <input type=\"submit\" value=\"Start OpenID Login\">\n</form>\n{{ end }}\n"),
 	}
 
 	// define dirs
 	dir1 := &embedded.EmbeddedDir{
 		Filename:   "",
-		DirModTime: time.Unix(1588783770, 0),
+		DirModTime: time.Unix(1588836436, 0),
 		ChildFiles: []*embedded.EmbeddedFile{},
 	}
 	dir2 := &embedded.EmbeddedDir{
+		Filename:   "_partials",
+		DirModTime: time.Unix(1588836436, 0),
+		ChildFiles: []*embedded.EmbeddedFile{
+			file3, // "_partials/baseof.html"
+			file4, // "_partials/head.html"
+
+		},
+	}
+	dir5 := &embedded.EmbeddedDir{
 		Filename:   "api",
 		DirModTime: time.Unix(1588783203, 0),
 		ChildFiles: []*embedded.EmbeddedFile{},
 	}
-	dir3 := &embedded.EmbeddedDir{
+	dir6 := &embedded.EmbeddedDir{
 		Filename:   "api/auth",
 		DirModTime: time.Unix(1588783203, 0),
 		ChildFiles: []*embedded.EmbeddedFile{},
 	}
-	dir4 := &embedded.EmbeddedDir{
+	dir7 := &embedded.EmbeddedDir{
 		Filename:   "api/auth/v1",
 		DirModTime: time.Unix(1588786310, 0),
 		ChildFiles: []*embedded.EmbeddedFile{
-			file5, // "api/auth/v1/login.html"
+			file8, // "api/auth/v1/login.html"
 
 		},
 	}
 
 	// link ChildDirs
 	dir1.ChildDirs = []*embedded.EmbeddedDir{
-		dir2, // "api"
+		dir2, // "_partials"
+		dir5, // "api"
 
 	}
-	dir2.ChildDirs = []*embedded.EmbeddedDir{
-		dir3, // "api/auth"
+	dir2.ChildDirs = []*embedded.EmbeddedDir{}
+	dir5.ChildDirs = []*embedded.EmbeddedDir{
+		dir6, // "api/auth"
 
 	}
-	dir3.ChildDirs = []*embedded.EmbeddedDir{
-		dir4, // "api/auth/v1"
+	dir6.ChildDirs = []*embedded.EmbeddedDir{
+		dir7, // "api/auth/v1"
 
 	}
-	dir4.ChildDirs = []*embedded.EmbeddedDir{}
+	dir7.ChildDirs = []*embedded.EmbeddedDir{}
 
 	// register embeddedBox
 	embedded.RegisterEmbeddedBox(`../../templates`, &embedded.EmbeddedBox{
 		Name: `../../templates`,
-		Time: time.Unix(1588783770, 0),
+		Time: time.Unix(1588836436, 0),
 		Dirs: map[string]*embedded.EmbeddedDir{
 			"":            dir1,
-			"api":         dir2,
-			"api/auth":    dir3,
-			"api/auth/v1": dir4,
+			"_partials":   dir2,
+			"api":         dir5,
+			"api/auth":    dir6,
+			"api/auth/v1": dir7,
 		},
 		Files: map[string]*embedded.EmbeddedFile{
-			"api/auth/v1/login.html": file5,
+			"_partials/baseof.html":  file3,
+			"_partials/head.html":    file4,
+			"api/auth/v1/login.html": file8,
 		},
 	})
 }

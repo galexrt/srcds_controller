@@ -195,8 +195,6 @@ func main() {
 	<-sigs
 	close(stopCh)
 
-	consoleMutex.Lock()
-
 	if tty != nil {
 		cfgMutex.Lock()
 		onExitCommand := config.Cfg.Server.OnExitCommand
@@ -204,7 +202,9 @@ func main() {
 		if onExitCommand != "" {
 			logger.Infof("trying to run onExitCommand '%s'\n", onExitCommand)
 
+			consoleMutex.Lock()
 			tty.Write([]byte("\n" + onExitCommand + "\n"))
+			consoleMutex.Unlock()
 			time.Sleep(5 * time.Second)
 		}
 	}
@@ -319,9 +319,7 @@ func configWatchAndReconcile(stopCh chan struct{}) {
 
 	for {
 		select {
-		case <-stopCh:
-			logger.Info("config watch and reconcile has been stopped")
-		case <-time.After(5 * time.Minute):
+		case <-time.After(15 * time.Minute):
 			logger.Info("config watch and reconcile is still running")
 		case event, ok := <-watcher.Events:
 			if !ok {
@@ -336,6 +334,9 @@ func configWatchAndReconcile(stopCh chan struct{}) {
 				return
 			}
 			logger.Errorf("error during config fsnotify. %w", err)
+		case <-stopCh:
+			logger.Info("config watch and reconcile has been stopped")
+			return
 		}
 	}
 }
@@ -357,10 +358,10 @@ func checkIfConfigChanged() {
 		}
 	}
 
-	logger.Info("config file has been reloaded")
 	cfgMutex.Lock()
 	defer cfgMutex.Unlock()
 	config.Cfg = newCfg
+	logger.Info("config file has been reloaded")
 }
 
 func cleanOutput(in string) string {
