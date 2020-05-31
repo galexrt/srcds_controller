@@ -147,6 +147,9 @@ var serverConsoleCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
+					if strings.Contains(msg, "srcds_controller_check") {
+						continue
+					}
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
 					}

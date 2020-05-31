@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -69,6 +70,9 @@ var serverLogsCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
+					if strings.Contains(msg, "srcds_controller_check") {
+						continue
+					}
 					msg = colorMessage(msg)
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
@@ -87,6 +91,9 @@ var serverLogsCmd = &cobra.Command{
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					msg := scanner.Text()
+					if strings.Contains(msg, "srcds_controller_check") {
+						continue
+					}
 					msg = colorMessage(msg)
 					if len(servers) > 1 {
 						msg = fmt.Sprintf("%s: %s", serverName, msg)
