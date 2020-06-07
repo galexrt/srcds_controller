@@ -1,3 +1,7 @@
+## 0.1.10 / 2020-06-07
+
+* [BUGFIX] ci: update makefile
+
 ## 0.1.9 / 2020-06-07
 
 * [BUGFIX] *: fix `log.Error*` calls
