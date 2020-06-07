@@ -23,9 +23,11 @@ _testmain.go
 *.test
 *.prof
 
-_build/
-_cache/
-dist/
+/.bin/
+/.build/
+/.tarballs/
+/.package/
+
 sc
 !sc/
 /srcds_cmdrelay
@@ -44,6 +46,5 @@ sc
 /.srcds_runner.sock
 
 vendor.orig/
-.build/
 
 /vendor/
