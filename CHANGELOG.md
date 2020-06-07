@@ -1,4 +1,4 @@
-## 0.1.6 / 2020-06-07
+## 0.1.8 / 2020-06-07
 
 * [ENHANCEMENT] use GitHub actions + promu
 
