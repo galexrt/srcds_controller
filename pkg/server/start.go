@@ -65,7 +65,7 @@ func Start(serverCfg *config.Config) error {
 		cmd.Env = os.Environ()
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("failed to pull %s container image for gameserver. %w", *serverCfg.Docker.Image, err)
+			log.Error(fmt.Errorf("failed to pull %s container image for gameserver. %w", *serverCfg.Docker.Image, err))
 		} else {
 			log.Info("successfully pulled gameserver container image")
 		}

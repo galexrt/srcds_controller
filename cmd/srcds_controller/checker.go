@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -61,7 +62,7 @@ var checkerCmd = &cobra.Command{
 		go func() {
 			defer wg.Done()
 			if err := checker.New().Run(stopCh); err != nil {
-				log.Error("error during checker.Run(). %+v", err)
+				log.Error(fmt.Errorf("error during checker.Run(). %w", err))
 			}
 		}()
 
