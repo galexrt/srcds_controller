@@ -4,7 +4,7 @@ MAINTAINER  ?= Alexander Trost <galexrt@googlemail.com>
 HOMEPAGE    ?= https://github.com/galexrt/srcds_controller
 
 GO111MODULE  ?= on
-GO           := go
+GO           ?= go
 FPM          ?= fpm
 PROMU        := $(GOPATH)/bin/promu
 PREFIX       ?= $(shell pwd)
@@ -44,8 +44,15 @@ build: promu
 	@echo ">> building binaries"
 	GO111MODULE=$(GO111MODULE) $(PROMU) build --prefix $(PREFIX) $(PROMU_BINARIES)
 
-crossbuild: promu
-	@$(PROMU) crossbuild
+check_license:
+	@OUTPUT="$$(promu check licenses)"; \
+	if [[ $$OUTPUT ]]; then \
+		echo "Found go files without license header:"; \
+		echo "$$OUTPUT"; \
+		exit 1; \
+	else \
+		echo "All files with license header"; \
+	fi
 
 docker:
 	@echo ">> building docker image"
