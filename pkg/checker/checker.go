@@ -61,6 +61,10 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 	}()
 
 	for _, server := range userconfig.Cfg.Servers {
+		if !server.Server.Enabled {
+			log.Infof("server %s disabled", server.Server.Name)
+			continue
+		}
 		wg.Add(1)
 		go func(server *config.Config) {
 			defer wg.Done()
