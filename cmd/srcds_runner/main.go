@@ -178,7 +178,13 @@ func main() {
 		logger.Fatalf("failed to run gameserver command in tty. %w", err)
 	}
 
-	wg.Add(2)
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		err := cmd.Wait()
+		logger.Warnf("process has exited, sending interrupt to runner. %+v", err)
+		sigs <- os.Interrupt
+	}()
 	go func() {
 		defer wg.Done()
 		logger.Info("beginning to stream logs from console")
