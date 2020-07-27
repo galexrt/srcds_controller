@@ -66,8 +66,6 @@ var checkerCmd = &cobra.Command{
 			}
 		}()
 
-		// TODO Add "maintenance" tasks such as removing unused images and so on
-
 		log.Info("waiting for signal")
 		<-sigCh
 		log.Info("signal received")
