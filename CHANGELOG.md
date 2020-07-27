@@ -1,3 +1,7 @@
+## 0.1.12 / 2020-07-27
+
+* [BUGFIX] terminate srcds_runner when process has exited
+
 ## 0.1.11 / 2020-06-07
 
 * [BUGFIX] ci: update makefile
