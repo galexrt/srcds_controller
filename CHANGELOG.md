@@ -1,3 +1,11 @@
+## 0.1.14 / 2020-08-16
+
+* [BUGFIX] fix changelog
+
+## 0.1.13 / 2020-08-16
+
+* [BUGFIX] fix config reconcile bug
+
 ## 0.1.12 / 2020-07-27
 
 * [BUGFIX] terminate srcds_runner when process has exited
