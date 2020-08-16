@@ -49,6 +49,12 @@ func (c *Config) Verify() error {
 		return fmt.Errorf("no server config found")
 	}
 
+	if c.Server.RCON != nil {
+		if c.Server.RCON.Password == "" {
+			return fmt.Errorf("no RCON password set")
+		}
+	}
+
 	if c.Server.Command == "" {
 		c.Server.Command = "./srcds_run"
 	}

@@ -333,6 +333,7 @@ func configWatchAndReconcile(stopCh chan struct{}) {
 			}
 
 			if event.Op&fsnotify.Write == fsnotify.Write {
+				logger.Info("config has been written to / changed, reconciling")
 				checkIfConfigChanged()
 			}
 		case err, ok := <-watcher.Errors:
@@ -351,17 +352,23 @@ func checkIfConfigChanged() {
 	newCfg, err := loadConfig()
 	if err != nil {
 		logger.Errorf("failed to reload config. %w", err)
+		return
 	}
-	if err := config.Cfg.Verify(); err != nil {
+	if err := newCfg.Verify(); err != nil {
 		logger.Errorf("failed to verify reloaded config. %w", err)
+		return
 	}
 
-	if config.Cfg.Server.RCON.Password != newCfg.Server.RCON.Password {
-		consoleMutex.Lock()
-		defer consoleMutex.Unlock()
-		if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", newCfg.Server.RCON.Password))); err != nil {
-			logger.Errorf("failed to write rcon_password command to server console. %+v", err)
+	if newCfg.Server != nil && newCfg.Server.RCON != nil {
+		if config.Cfg.Server.RCON.Password != newCfg.Server.RCON.Password {
+			consoleMutex.Lock()
+			defer consoleMutex.Unlock()
+			if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", newCfg.Server.RCON.Password))); err != nil {
+				logger.Errorf("failed to write rcon_password command to server console. %+v", err)
+			}
 		}
+	} else {
+		logger.Warn("no RCON password found in new config")
 	}
 
 	cfgMutex.Lock()

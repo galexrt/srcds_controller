@@ -33,7 +33,7 @@ type Server struct {
 	Command       string               `yaml:"command"`
 	Flags         []string             `yaml:"flags"`
 	MapSelection  *MapSelection        `yaml:"mapSelection"`
-	RCON          RCON                 `yaml:"rcon"`
+	RCON          *RCON                `yaml:"rcon"`
 	Checks        []Check              `yaml:"checks"`
 	OnExitCommand string               `yaml:"onExitCommand"`
 	GameID        int64                `yaml:"gameID"`
