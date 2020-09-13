@@ -102,11 +102,12 @@ func setupServerArgs() []string {
 
 	contArgs := strslice.StrSlice{
 		config.Cfg.Server.Command,
-		"-port",
-		strconv.Itoa(config.Cfg.Server.Port),
 	}
 
 	for _, arg := range config.Cfg.Server.Flags {
+		if config.Cfg.Server.Port != 0 {
+			arg = strings.Replace(arg, "%SERVER_PORT%", strconv.Itoa(config.Cfg.Server.Port), -1)
+		}
 		arg = strings.Replace(arg, "%RCON_PASSWORD%", config.Cfg.Server.RCON.Password, -1)
 		arg = strings.Replace(arg, "%MAP_RANDOM%", chosenMap, -1)
 		contArgs = append(contArgs, arg)
@@ -360,7 +361,7 @@ func checkIfConfigChanged() {
 	}
 
 	if newCfg.Server != nil && newCfg.Server.RCON != nil {
-		if config.Cfg.Server.RCON.Password != newCfg.Server.RCON.Password {
+		if newCfg.Server.RCON.Password != config.Cfg.Server.RCON.Password {
 			consoleMutex.Lock()
 			defer consoleMutex.Unlock()
 			if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", newCfg.Server.RCON.Password))); err != nil {
