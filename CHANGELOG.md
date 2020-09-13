@@ -1,3 +1,7 @@
+## 0.1.15 / 2020-09-13
+
+* [ENHANCEMENT] remove hardcoded `srcds_run` flags
+
 ## 0.1.14 / 2020-08-16
 
 * [BUGFIX] fix changelog
