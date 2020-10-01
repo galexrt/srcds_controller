@@ -14,6 +14,7 @@ server:
   flags:
     - -console
     - -game garrysmod
+    - -port %SERVER_PORT%
     - +map %MAP_RANDOM%
   mapSelection:
     enabled: true

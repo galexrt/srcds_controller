@@ -84,8 +84,6 @@ func setupServerArgs() []string {
 	cfgMutex.Lock()
 	defer cfgMutex.Unlock()
 
-	syscall.Umask(config.Cfg.General.Umask)
-
 	var err error
 	chosenMap := config.Cfg.Server.MapSelection.FallbackMap
 	if config.Cfg.Server.MapSelection.Enabled {
@@ -146,6 +144,7 @@ func main() {
 	}
 	cfgMutex.Lock()
 	config.Cfg = cfg
+	syscall.Umask(config.Cfg.General.Umask)
 	cfgMutex.Unlock()
 
 	contArgs := setupServerArgs()
