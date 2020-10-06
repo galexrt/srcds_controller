@@ -20,8 +20,6 @@ build:
           path: ./cmd/srcds_cmdrelay
         - name: srcds_runner
           path: ./cmd/srcds_runner
-        - name: srcds_webber
-          path: ./cmd/srcds_webber
 tarball:
     files:
         - LICENSE

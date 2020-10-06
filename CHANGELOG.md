@@ -1,3 +1,7 @@
+## 0.1.18 / 2020-10-06
+
+* [BUGFIX] fix promu build config
+
 ## 0.1.17 / 2020-10-06
 
 * [BUGFIX] fix type mismatch in srcds_runner
