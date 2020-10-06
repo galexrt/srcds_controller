@@ -1,3 +1,7 @@
+## 0.1.16 / 2020-10-06
+
+* [BUGFIX] reworked config reconcile logic in srcds_runner
+
 ## 0.1.15 / 2020-09-13
 
 * [ENHANCEMENT] remove hardcoded `srcds_run` flags
