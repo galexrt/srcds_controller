@@ -359,7 +359,7 @@ func checkIfConfigChanged() {
 		return
 	}
 
-	if newCfg.Server != nil && newCfg.Server.RCON != nil && newCfg.Server.RCON != "" {
+	if newCfg.Server != nil && newCfg.Server.RCON != nil && newCfg.Server.RCON.Password != "" {
 		consoleMutex.Lock()
 		func() {
 			defer consoleMutex.Unlock()
