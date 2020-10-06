@@ -115,7 +115,7 @@ func Start(serverCfg *config.Config) error {
 				},
 				{
 					Type:     mount.TypeBind,
-					Source:   "/etc/timezone",
+					Source:   serverCfg.Docker.TimezoneFile,
 					Target:   "/etc/timezone",
 					ReadOnly: true,
 				},

@@ -38,11 +38,8 @@ sc
 !/srcds_run.go
 /srcds_runner
 !srcds_runner/
-/srcds_webber
-!srcds_webber/
 .srcds_controller.yaml
 .srcds_controller_server.yaml
-.srcds_webber.yaml
 /.srcds_runner.sock
 
 vendor.orig/

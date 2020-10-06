@@ -42,7 +42,7 @@ type Limit struct {
 // Checker config for the checker.Checker
 type Checker struct {
 	Interval time.Duration `yamk:"interval"`
-	Splay    Splay         `yaml:"splay"`
+	Splay    *Splay        `yaml:"splay"`
 }
 
 // Splay time splay config

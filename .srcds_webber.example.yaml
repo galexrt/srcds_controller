@@ -1,9 +1,0 @@
-serverDirectories:
-  - /my-gameservers/*
-oauth2:
-  clientID: ""
-  clientSecret: ""
-  redirectURL: "http://127.0.0.1:8081/api/auth/v1/openid/callback"
-  userAPI: "https://example.com/oauth-user/"
-  authURL: "https://example.com/oauth-consent/"
-  tokenURL: "https://example.com/oauth-token/"

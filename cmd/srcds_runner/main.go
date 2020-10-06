@@ -351,7 +351,7 @@ func configWatchAndReconcile(stopCh chan struct{}) {
 func checkIfConfigChanged() {
 	newCfg, err := loadConfig()
 	if err != nil {
-		logger.Errorf("failed to reload config. %w", err)
+		logger.Errorf("failed to reload new config. %w", err)
 		return
 	}
 	if err := newCfg.Verify(); err != nil {
@@ -359,14 +359,14 @@ func checkIfConfigChanged() {
 		return
 	}
 
-	if newCfg.Server != nil && newCfg.Server.RCON != nil {
-		if newCfg.Server.RCON.Password != config.Cfg.Server.RCON.Password {
-			consoleMutex.Lock()
+	if newCfg.Server != nil && newCfg.Server.RCON != nil && newCfg.Server.RCON != "" {
+		consoleMutex.Lock()
+		func() {
 			defer consoleMutex.Unlock()
-			if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n\n", newCfg.Server.RCON.Password))); err != nil {
+			if _, err := tty.Write([]byte(fmt.Sprintf("rcon_password %s\n", newCfg.Server.RCON.Password))); err != nil {
 				logger.Errorf("failed to write rcon_password command to server console. %+v", err)
 			}
-		}
+		}()
 	} else {
 		logger.Warn("no RCON password found in new config")
 	}

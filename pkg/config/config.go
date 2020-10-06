@@ -60,17 +60,16 @@ func (c *Config) Verify() error {
 	}
 
 	if c.Docker == nil {
-		c.Docker = &Docker{
-			Image:      util.StringPointer("galexrt/srcds_controller:runner-latest"),
-			NamePrefix: "game-",
-		}
-	} else {
-		if c.Docker.Image == nil {
-			c.Docker.Image = util.StringPointer("galexrt/srcds_controller:runner-latest")
-		}
-		if c.Docker.NamePrefix == "" {
-			c.Docker.NamePrefix = "game-"
-		}
+		c.Docker = &Docker{}
+	}
+	if c.Docker.Image == nil {
+		c.Docker.Image = util.StringPointer("galexrt/srcds_controller:runner-latest")
+	}
+	if c.Docker.NamePrefix == "" {
+		c.Docker.NamePrefix = "game-"
+	}
+	if c.Docker.TimezoneFile == "" {
+		c.Docker.TimezoneFile = "/etc/timezone"
 	}
 
 	if c.Server.ACL == nil {
@@ -87,16 +86,15 @@ func (c *Config) Verify() error {
 	}
 
 	if c.Checker == nil {
-		c.Checker = &Checker{
-			Interval: 30 * time.Second,
-			Splay: Splay{
-				Start: 0,
-				End:   20,
-			},
-		}
-	} else {
-		if c.Checker.Interval == 0 {
-			c.Checker.Interval = 30 * time.Second
+		c.Checker = &Checker{}
+	}
+	if c.Checker.Interval == 0 {
+		c.Checker.Interval = 30 * time.Second
+	}
+	if c.Checker.Splay == nil {
+		c.Checker.Splay = &Splay{
+			Start: 0,
+			End:   20,
 		}
 	}
 

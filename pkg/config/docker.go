@@ -21,4 +21,5 @@ type Docker struct {
 	Image            *string  `yaml:"image"`
 	NamePrefix       string   `yaml:"namePrefix"`
 	AdditionalMounts []string `yaml:"additionalMounts"`
+	TimezoneFile     string   `yaml:"timezoneFile"`
 }

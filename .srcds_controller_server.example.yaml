@@ -6,6 +6,9 @@ general:
 docker:
   image: galexrt/srcds_controller:runner-latest
   namePrefix: "game-"
+  additionalMounts: []
+  # /usr/share/zoneinfo/Europe/Berlin
+  timezoneFile: ""
 server:
   name: testserver123
   address: 127.0.0.1
