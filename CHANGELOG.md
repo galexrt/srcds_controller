@@ -1,3 +1,7 @@
+## 0.1.17 / 2020-10-06
+
+* [BUGFIX] fix type mismatch in srcds_runner
+
 ## 0.1.16 / 2020-10-06
 
 * [BUGFIX] reworked config reconcile logic in srcds_runner
