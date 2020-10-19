@@ -1,6 +1,6 @@
 go:
   version: 1.14
-  cgo: true
+  cgo: false
 repository:
     path: github.com/galexrt/srcds_controller
 build:

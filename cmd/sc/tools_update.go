@@ -50,16 +50,18 @@ var serverToolsUpdate = &cobra.Command{
 
 		errorOccured := false
 		for _, serverCfg := range servers {
+			argAppUpdate := fmt.Sprintf("+app_update %d", serverCfg.Server.GameID)
+			beta := viper.GetString("beta")
+			if beta != "" {
+				argAppUpdate += fmt.Sprintf(" -beta %s", beta)
+			}
+			argAppUpdate += " validate"
+
 			commandArgs := []string{
 				"+login anonymous",
 				fmt.Sprintf("+force_install_dir %s", serverCfg.Server.Path),
-				fmt.Sprintf("+app_update %d", serverCfg.Server.GameID),
+				argAppUpdate,
 			}
-			beta := viper.GetString("beta")
-			if beta != "" {
-				commandArgs = append(commandArgs, fmt.Sprintf("-beta %s", beta))
-			}
-			commandArgs = append(commandArgs, "validate")
 
 			if viper.GetBool(AllServers) {
 				commandArgs = append(commandArgs, args[0:]...)
