@@ -28,6 +28,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverToolsUpdate represents the stop command
@@ -53,8 +54,15 @@ var serverToolsUpdate = &cobra.Command{
 				"+login anonymous",
 				fmt.Sprintf("+force_install_dir %s", serverCfg.Server.Path),
 				fmt.Sprintf("+app_update %d", serverCfg.Server.GameID), "validate",
-				"+quit",
 			}
+
+			if viper.GetBool(AllServers) {
+				commandArgs = append(commandArgs, args[0:]...)
+			} else if len(args) > 1 {
+				commandArgs = append(commandArgs, args[1:]...)
+			}
+
+			commandArgs = append(commandArgs, "+quit")
 			command := exec.Command(path.Join(home, "steamcmd/steamcmd.sh"), commandArgs...)
 			tty, err := pty.Start(command)
 			if err != nil {
