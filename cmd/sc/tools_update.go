@@ -53,8 +53,13 @@ var serverToolsUpdate = &cobra.Command{
 			commandArgs := []string{
 				"+login anonymous",
 				fmt.Sprintf("+force_install_dir %s", serverCfg.Server.Path),
-				fmt.Sprintf("+app_update %d", serverCfg.Server.GameID), "validate",
+				fmt.Sprintf("+app_update %d", serverCfg.Server.GameID),
 			}
+			beta := viper.GetString("beta")
+			if beta != "" {
+				commandArgs = append(commandArgs, fmt.Sprintf("-beta %s", beta))
+			}
+			commandArgs = append(commandArgs, "validate")
 
 			if viper.GetBool(AllServers) {
 				commandArgs = append(commandArgs, args[0:]...)
@@ -63,6 +68,9 @@ var serverToolsUpdate = &cobra.Command{
 			}
 
 			commandArgs = append(commandArgs, "+quit")
+
+			log.Infof("running steamcmd command: %s %s", path.Join(home, "steamcmd/steamcmd.sh"), commandArgs)
+
 			command := exec.Command(path.Join(home, "steamcmd/steamcmd.sh"), commandArgs...)
 			tty, err := pty.Start(command)
 			if err != nil {
@@ -99,6 +107,9 @@ var serverToolsUpdate = &cobra.Command{
 }
 
 func init() {
+	serverToolsUpdate.PersistentFlags().String("beta", "", "which branch to install during steamcmd app_install validate")
+	viper.BindPFlag("beta", serverToolsUpdate.PersistentFlags().Lookup("beta"))
+
 	serverToolsCmd.AddCommand(serverToolsUpdate)
 }
 
