@@ -1,4 +1,4 @@
-FROM galexrt/gameserver:v20200601-144434-783
+FROM galexrt/gameserver:v20201022-020702-716
 LABEL maintainer="Alexander Trost <galexrt@googlemail.com>"
 
 # Copied from https://github.com/mono/docker/blob/a449b2a57e1cfadd098c2bcad13f89c4eab83e54/6.10.0.104/slim/Dockerfile
