@@ -17,7 +17,6 @@ limitations under the License.
 package userconfig
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/galexrt/srcds_controller/pkg/config"
 	"github.com/imdario/mergo"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -59,7 +59,7 @@ func (uc *UserConfig) Load(globalCfg *config.GlobalConfig, cfgs *Config) error {
 	}
 
 	if len(configsToLoad) == 0 {
-		return fmt.Errorf("no configs to load found in any serverDirectories path")
+		log.Warn("no server configs found")
 	}
 
 	for _, confToLoad := range configsToLoad {
@@ -89,7 +89,7 @@ func (uc *UserConfig) Load(globalCfg *config.GlobalConfig, cfgs *Config) error {
 
 			cfgs.Servers[serverCfg.Server.Name] = serverCfg
 		} else {
-			return fmt.Errorf("skipping config %s due to error", confToLoad)
+			log.Warnf("skipping config %s due to error", confToLoad)
 		}
 	}
 

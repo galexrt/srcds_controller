@@ -44,7 +44,7 @@ func checkServers(cmd *cobra.Command, args []string) ([]*config.Config, error) {
 	}
 
 	if len(servers) == 0 {
-		return servers, fmt.Errorf("no server(s) given, please provide a server list as the first argument, example: `sc " + cmd.Name() + " SERVER_A,SERVER_B` or `all` instead of the server list")
+		return servers, fmt.Errorf("no server(s) given, please provide a server list as the first argument, example: `" + cmd.CommandPath() + " SERVER_A,SERVER_B` or `all` instead of the server list")
 	}
 
 	return servers, nil

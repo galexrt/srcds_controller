@@ -23,7 +23,7 @@ import (
 // scDebugCmd represents the sc debug subcommand
 var scDebugCmd = &cobra.Command{
 	Use:    "debug",
-	Short:  "sc debug subcommand section",
+	Short:  "sc debug subcommand for debugging",
 	Hidden: true,
 }
 
