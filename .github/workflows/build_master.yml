@@ -1,10 +1,11 @@
-name: build_release
+name: build_master
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
+      - main
 jobs:
-  build_release:
+  build_master:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,14 +20,9 @@ jobs:
           make promu
           make check_license
       - name: Build and release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           make promu
           promu crossbuild
-          promu crossbuild tarballs
-          promu checksum .tarballs
-          promu release .tarballs
       - name: Build and push to Docker Hub
         uses: elgohr/Publish-Docker-Github-Action@master
         with:
@@ -41,5 +37,4 @@ jobs:
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
           registry: quay.io
-          tag_names: true
-          tags: "latest"
+          tags: "master"

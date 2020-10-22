@@ -1,3 +1,7 @@
+## 0.1.20 / 2020-10-22
+
+* [BUGFIX] fix docker base image (updated it to buster as well)
+
 ## 0.1.19 / 2020-10-22
 
 * [ENHANCEMENT] fixed the command name in the "no servers given" error message
