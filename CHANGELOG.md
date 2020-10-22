@@ -1,3 +1,7 @@
+## 0.1.19 / 2020-10-22
+
+* [ENHANCEMENT] fixed the command name in the "no servers given" error message
+
 ## 0.1.18 / 2020-10-06
 
 * [BUGFIX] fix promu build config
