@@ -78,7 +78,6 @@ func Start(serverCfg *config.Config) error {
 		containerID = cont.ID
 	} else {
 		serverDir := serverCfg.Server.Path
-		mountDir := serverCfg.Server.MountsDir
 
 		hostname, err := os.Hostname()
 		if err != nil {
@@ -141,11 +140,11 @@ func Start(serverCfg *config.Config) error {
 			},
 			NetworkMode: "host",
 		}
-		if mountDir != "" {
+		if serverCfg.Server.MountsDir != "" {
 			contHostCfg.Mounts = append(contHostCfg.Mounts, mount.Mount{
 				Type:     mount.TypeBind,
-				Source:   mountDir,
-				Target:   mountDir,
+				Source:   serverCfg.Server.MountsDir,
+				Target:   serverCfg.Server.MountsDir,
 				ReadOnly: true,
 			})
 		}
