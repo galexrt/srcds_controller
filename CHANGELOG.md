@@ -1,3 +1,7 @@
+## 0.1.23 / 2020-10-23
+
+* [BUGFIX] use cgo for builds
+
 ## 0.1.22 / 2020-10-23
 
 * [BUGFIX] fix mono installation in docker till we have per gameserver type images
