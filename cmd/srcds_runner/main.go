@@ -85,16 +85,19 @@ func setupServerArgs() []string {
 	defer cfgMutex.Unlock()
 
 	var err error
-	chosenMap := config.Cfg.Server.MapSelection.FallbackMap
-	if config.Cfg.Server.MapSelection.Enabled {
-		chosenMap, err = getRandomMap(config.Cfg.Server.MapSelection.FileFilter)
-		if err != nil {
-			logger.Errorf(
-				"failed to get a random map (filter: '%s'), using fallback %s. %+v",
-				config.Cfg.Server.MapSelection.FallbackMap,
-				config.Cfg.Server.MapSelection.FileFilter,
-				err,
-			)
+	var chosenMap string
+	if config.Cfg.Server.MapSelection != nil && config.Cfg.Server.MapSelection.Enabled {
+		chosenMap = config.Cfg.Server.MapSelection.FallbackMap
+		if config.Cfg.Server.MapSelection.Enabled {
+			chosenMap, err = getRandomMap(config.Cfg.Server.MapSelection.FileFilter)
+			if err != nil {
+				logger.Errorf(
+					"failed to get a random map (filter: '%s'), using fallback %s. %+v",
+					config.Cfg.Server.MapSelection.FallbackMap,
+					config.Cfg.Server.MapSelection.FileFilter,
+					err,
+				)
+			}
 		}
 	}
 
@@ -106,8 +109,12 @@ func setupServerArgs() []string {
 		if config.Cfg.Server.Port != 0 {
 			arg = strings.Replace(arg, "%SERVER_PORT%", strconv.Itoa(config.Cfg.Server.Port), -1)
 		}
-		arg = strings.Replace(arg, "%RCON_PASSWORD%", config.Cfg.Server.RCON.Password, -1)
-		arg = strings.Replace(arg, "%MAP_RANDOM%", chosenMap, -1)
+		if config.Cfg.Server.RCON != nil {
+			arg = strings.Replace(arg, "%RCON_PASSWORD%", config.Cfg.Server.RCON.Password, -1)
+		}
+		if config.Cfg.Server.MapSelection != nil && config.Cfg.Server.MapSelection.Enabled {
+			arg = strings.Replace(arg, "%MAP_RANDOM%", chosenMap, -1)
+		}
 		contArgs = append(contArgs, arg)
 	}
 
