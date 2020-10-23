@@ -1,3 +1,7 @@
+## 0.1.21 / 2020-10-23
+
+* [BUGFIX] fix nil pointer when certain config options are not given (e.g., non srcds games)
+
 ## 0.1.20 / 2020-10-22
 
 * [BUGFIX] fix docker base image (updated it to buster as well)
