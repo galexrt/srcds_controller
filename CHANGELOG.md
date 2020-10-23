@@ -1,4 +1,8 @@
-## 0.1.23 / 2020-10-23
+## 0.1.25 / 2020-10-23
+
+* [BUGFIX] added missing changelog for v0.1.24
+
+## 0.1.24 / 2020-10-23
 
 * [ENHANCEMENT] allow additional env vars to be set for gameservers
 * [ENHANCEMENT] allow /etc/localtime to be set differently than /etc/timezone file
