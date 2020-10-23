@@ -1,3 +1,7 @@
+## 0.1.22 / 2020-10-23
+
+* [BUGFIX] fix mono installation in docker till we have per gameserver type images
+
 ## 0.1.21 / 2020-10-23
 
 * [BUGFIX] fix nil pointer when certain config options are not given (e.g., non srcds games)
