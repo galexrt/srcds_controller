@@ -1,5 +1,10 @@
 ## 0.1.23 / 2020-10-23
 
+* [ENHANCEMENT] allow additional env vars to be set for gameservers
+* [ENHANCEMENT] allow /etc/localtime to be set differently than /etc/timezone file
+
+## 0.1.23 / 2020-10-23
+
 * [BUGFIX] use cgo for builds
 
 ## 0.1.22 / 2020-10-23
