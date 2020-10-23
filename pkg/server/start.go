@@ -100,6 +100,7 @@ func Start(serverCfg *config.Config) error {
 			Image:       *serverCfg.Docker.Image,
 			WorkingDir:  serverDir,
 		}
+		contCfg.Env = append(contCfg.Env, serverCfg.Docker.AdditionalEnvVars...)
 
 		contHostCfg := &container.HostConfig{
 			RestartPolicy: container.RestartPolicy{
@@ -108,7 +109,7 @@ func Start(serverCfg *config.Config) error {
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
-					Source:   "/etc/localtime",
+					Source:   serverCfg.Docker.LocalTimeFile,
 					Target:   "/etc/localtime",
 					ReadOnly: true,
 				},

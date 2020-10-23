@@ -2,6 +2,10 @@ general:
   umask: 7
 docker:
   image: "galexrt/srcds_controller:runner-latest"
+  localTimeFile: "/etc/localtime"
+  timezoneFile: "/etc/timezone"
+  additionalEnvVars:
+    - "TZ=UTC"
 checks:
   rcon:
     timeout: 12s

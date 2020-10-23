@@ -68,6 +68,9 @@ func (c *Config) Verify() error {
 	if c.Docker.NamePrefix == "" {
 		c.Docker.NamePrefix = "game-"
 	}
+	if c.Docker.LocalTimeFile == "" {
+		c.Docker.LocalTimeFile = "/etc/localtime"
+	}
 	if c.Docker.TimezoneFile == "" {
 		c.Docker.TimezoneFile = "/etc/timezone"
 	}
