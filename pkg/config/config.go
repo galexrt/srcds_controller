@@ -39,55 +39,7 @@ type Config struct {
 
 // Verify verify the config file
 func (c *Config) Verify() error {
-	if c.General == nil {
-		c.General = &General{
-			Umask: 7,
-		}
-	}
-
-	if c.Server == nil {
-		return fmt.Errorf("no server config found")
-	}
-
-	if c.Server.RCON != nil {
-		if c.Server.RCON.Password == "" {
-			return fmt.Errorf("no RCON password set")
-		}
-	}
-
-	if c.Server.Command == "" {
-		c.Server.Command = "./srcds_run"
-	}
-
-	if c.Docker == nil {
-		c.Docker = &Docker{}
-	}
-	if c.Docker.Image == nil {
-		c.Docker.Image = util.StringPointer("galexrt/srcds_controller:runner-latest")
-	}
-	if c.Docker.NamePrefix == "" {
-		c.Docker.NamePrefix = "game-"
-	}
-	if c.Docker.LocalTimeFile == "" {
-		c.Docker.LocalTimeFile = "/etc/localtime"
-	}
-	if c.Docker.TimezoneFile == "" {
-		c.Docker.TimezoneFile = "/etc/timezone"
-	}
-
-	if c.Server.ACL == nil {
-		c.Server.ACL = &ACL{
-			Users:  []int{},
-			Groups: []int{},
-		}
-	}
-
-	if c.Server.MapSelection == nil {
-		c.Server.MapSelection = &MapSelection{
-			Enabled: false,
-		}
-	}
-
+	// Checker
 	if c.Checker == nil {
 		c.Checker = &Checker{}
 	}
@@ -99,6 +51,61 @@ func (c *Config) Verify() error {
 			Start: 0,
 			End:   20,
 		}
+	}
+
+	// Docker
+	if c.Docker == nil {
+		c.Docker = &Docker{}
+	}
+	if c.Docker.Image == nil {
+		c.Docker.Image = util.StringPointer("galexrt/srcds_controller:runner-latest")
+	}
+	if c.Docker.LocalTimeFile == "" {
+		c.Docker.LocalTimeFile = "/etc/localtime"
+	}
+	if c.Docker.NamePrefix == "" {
+		c.Docker.NamePrefix = "game-"
+	}
+	if c.Docker.TimezoneFile == "" {
+		c.Docker.TimezoneFile = "/etc/timezone"
+	}
+
+	// General
+	if c.General == nil {
+		c.General = &General{}
+	}
+	if c.General.Umask == 0 {
+		c.General.Umask = 7
+	}
+
+	// Server
+	if c.Server == nil {
+		return fmt.Errorf("no server config found")
+	}
+	if c.Server.ACL == nil {
+		c.Server.ACL = &ACL{
+			Users:  []int{0},
+			Groups: []int{0},
+		}
+	}
+	if c.Server.Address == "" {
+		return fmt.Errorf("no server address given")
+	}
+	if c.Server.Command == "" {
+		c.Server.Command = "./srcds_run"
+	}
+	if c.Server.MapSelection == nil {
+		c.Server.MapSelection = &MapSelection{
+			Enabled: false,
+		}
+	}
+	if c.Server.RCON != nil {
+		if c.Server.RCON.Password == "" {
+			return fmt.Errorf("no RCON password set")
+		}
+	}
+	if c.Server.Port == 0 {
+		return fmt.Errorf("no server port given")
 	}
 
 	return nil

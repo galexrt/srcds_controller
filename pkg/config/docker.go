@@ -18,10 +18,10 @@ package config
 
 // Docker config options for Docker connection and/or image used.
 type Docker struct {
-	Image             *string  `yaml:"image"`
-	NamePrefix        string   `yaml:"namePrefix"`
-	AdditionalMounts  []string `yaml:"additionalMounts"`
-	TimezoneFile      string   `yaml:"timezoneFile"`
-	LocalTimeFile     string   `yaml:"localTimeFile"`
 	AdditionalEnvVars []string `yaml:"additionalEnvVars"`
+	AdditionalMounts  []string `yaml:"additionalMounts"`
+	Image             *string  `yaml:"image"`
+	LocalTimeFile     string   `yaml:"localTimeFile"`
+	NamePrefix        string   `yaml:"namePrefix"`
+	TimezoneFile      string   `yaml:"timezoneFile"`
 }
