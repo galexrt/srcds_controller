@@ -1,3 +1,7 @@
+## 0.1.27 / 2021-01-12
+
+* [BUGFIX] fix dockerfile binary paths
+
 ## 0.1.25 / 2020-10-23
 
 * [BUGFIX] added missing changelog for v0.1.24
