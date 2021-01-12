@@ -83,10 +83,12 @@ func init() {
 	checkerCmd.PersistentFlags().Bool("dry-run", true, "dry run mode")
 	checkerCmd.PersistentFlags().String("log-level", "INFO", "log level")
 	checkerCmd.PersistentFlags().Bool("debug", false, "debug mode")
+	checkerCmd.PersistentFlags().Bool("dockerevents-checker", false, "if the dockerevents-checker should be enabled")
 
 	viper.BindPFlag("dry-run", checkerCmd.PersistentFlags().Lookup("dry-run"))
 	viper.BindPFlag("log-level", checkerCmd.PersistentFlags().Lookup("log-level"))
 	viper.BindPFlag("debug", checkerCmd.PersistentFlags().Lookup("debug"))
+	viper.BindPFlag("dockerevents-checker", checkerCmd.PersistentFlags().Lookup("dockerevents-checker"))
 
 	rootCmd.AddCommand(checkerCmd)
 }

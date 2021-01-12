@@ -54,11 +54,13 @@ func (c *Checker) Run(stopCh <-chan struct{}) error {
 
 	viper.Set("remove", false)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		CheckForDockerEvents(stopCh)
-	}()
+	if viper.GetBool("dockerevents-checker") {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			CheckForDockerEvents(stopCh)
+		}()
+	}
 
 	for _, server := range userconfig.Cfg.Servers {
 		if !server.Server.Enabled {

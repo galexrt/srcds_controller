@@ -104,7 +104,7 @@ func Start(serverCfg *config.Config) error {
 
 		contHostCfg := &container.HostConfig{
 			RestartPolicy: container.RestartPolicy{
-				Name: "no",
+				Name: "unless-stopped",
 			},
 			Mounts: []mount.Mount{
 				{
