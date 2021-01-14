@@ -1,3 +1,7 @@
+## 0.1.28 / 2021-01-14
+
+* [ENHANCEMENT] update base image to use galexrt/gameserver:v20210113-183742-977
+
 ## 0.1.27 / 2021-01-12
 
 * [BUGFIX] fix dockerfile binary paths
