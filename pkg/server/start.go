@@ -29,6 +29,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-units"
 	"github.com/galexrt/srcds_controller/pkg/config"
@@ -140,6 +141,9 @@ func Start(serverCfg *config.Config) error {
 				},
 			},
 			NetworkMode: "host",
+			CapAdd: strslice.StrSlice{
+				"SYS_PTRACE",
+			},
 		}
 		if serverCfg.Server.MountsDir != "" {
 			contHostCfg.Mounts = append(contHostCfg.Mounts, mount.Mount{
