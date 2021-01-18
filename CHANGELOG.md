@@ -1,3 +1,7 @@
+## 0.1.29 / 2021-01-18
+
+* [ENHANCEMENT] add SYS_PTRACE capability to containers for gdb
+
 ## 0.1.28 / 2021-01-14
 
 * [ENHANCEMENT] update base image to use galexrt/gameserver:v20210113-183742-977
