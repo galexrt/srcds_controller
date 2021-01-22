@@ -1,3 +1,11 @@
+## 0.1.31 / 2021-01-22
+
+* [ENHANCEMENT] enable cgo in builds
+
+## 0.1.30 / 2021-01-22
+
+* [BUGFIX] enable cgo in build
+
 ## 0.1.29 / 2021-01-18
 
 * [ENHANCEMENT] add SYS_PTRACE capability to containers for gdb
