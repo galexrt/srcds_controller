@@ -1,4 +1,4 @@
-FROM galexrt/gameserver:v20210113-183742-977
+FROM galexrt/gameserver:v20210211-204709-521
 LABEL maintainer="Alexander Trost <galexrt@googlemail.com>"
 
 ADD .build/linux-amd64/srcds_runner /bin/srcds_runner

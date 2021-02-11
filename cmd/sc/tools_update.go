@@ -99,6 +99,8 @@ var serverToolsUpdate = &cobra.Command{
 				log.Errorf("%+v", err)
 				errorOccured = true
 			}
+
+			// TODO Do something about the permissions of the files
 		}
 
 		if errorOccured {
