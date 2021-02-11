@@ -1,3 +1,8 @@
+## 0.1.32 / 2021-02-11
+
+* [ENHANCEMENT] cleanup go mod files
+* [ENHANCEMENT] update base image to `galexrt/gameserver:v20210211-204709-521`
+
 ## 0.1.31 / 2021-01-22
 
 * [ENHANCEMENT] enable cgo in builds
