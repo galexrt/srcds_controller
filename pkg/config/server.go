@@ -40,6 +40,7 @@ type Server struct {
 	Resources     *container.Resources `yaml:"resources,omitempty"`
 	RunOptions    RunOptions           `yaml:"runOptions"`
 	ACL           *ACL                 `yaml:"acl"`
+	SteamCMDDir   string               `yaml:"steamCMDDir"`
 	Path          string
 }
 

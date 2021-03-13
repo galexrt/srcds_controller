@@ -18,9 +18,11 @@ package config
 
 import (
 	"fmt"
+	"path"
 	"time"
 
 	"github.com/galexrt/srcds_controller/pkg/util"
+	"github.com/mitchellh/go-homedir"
 )
 
 // Cfg variables holding the Config
@@ -106,6 +108,15 @@ func (c *Config) Verify() error {
 	}
 	if c.Server.Port == 0 {
 		return fmt.Errorf("no server port given")
+	}
+
+	if c.Server.SteamCMDDir == "" {
+		// Get current user's home dir
+		home, err := homedir.Dir()
+		if err != nil {
+			return err
+		}
+		c.Server.SteamCMDDir = path.Join(home, "steamcmd")
 	}
 
 	return nil
