@@ -1,3 +1,8 @@
+## 0.1.33 / 2021-03-14
+
+* [ENHANCEMENT] allow core file size up to 2000
+* [BUGFIX] use `docker run` for `steamcmd.sh` update process to circumvent the permissions issues if "not same uid" gameservers were updated
+
 ## 0.1.32 / 2021-02-11
 
 * [ENHANCEMENT] cleanup go mod files
