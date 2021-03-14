@@ -83,6 +83,10 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	if viper.GetBool("debug") {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	if cfgFile == "" {
 		// Get current work
 		home, err := homedir.Dir()

@@ -20,12 +20,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"path"
-	"strings"
 
 	"github.com/acarl005/stripansi"
-	"github.com/creack/pty"
+	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,89 +41,9 @@ var serverToolsUpdate = &cobra.Command{
 
 		errorOccured := false
 		for _, serverCfg := range servers {
-			logger := log.WithFields(log.Fields{
-				"server": serverCfg.Server.Name,
-				"path":   serverCfg.Server.Path,
-			})
-
-			// Set the server dir as the home, unless otherwise set
-			serverHomeDir := serverCfg.Server.Path
-			if serverCfg.Server.RunOptions.HomeDir != "" {
-				serverHomeDir = serverCfg.Server.RunOptions.HomeDir
-			}
-
-			// Base docker Command + Args
-			command := "docker"
-			commandArgs := []string{
-				"run",
-				"--interactive",
-				"--tty",
-				// Set correct user + work dir
-				fmt.Sprintf("--user=%d:%d", serverCfg.Server.RunOptions.UID, serverCfg.Server.RunOptions.GID),
-				fmt.Sprintf("--workdir=%s", serverCfg.Server.Path),
-				fmt.Sprintf("--env=HOME=%s", serverHomeDir),
-				// Add volumes
-				fmt.Sprintf("--volume=%s:%s", serverCfg.Server.Path, serverCfg.Server.Path),
-				fmt.Sprintf("--volume=%s:%s", serverCfg.Server.SteamCMDDir, serverCfg.Server.SteamCMDDir),
-				*serverCfg.Docker.Image,
-			}
-
-			argAppUpdate := fmt.Sprintf("+app_update %d", serverCfg.Server.GameID)
-			beta := viper.GetString("beta")
-			if beta != "" {
-				argAppUpdate += fmt.Sprintf(" -beta %s", beta)
-			}
-			argAppUpdate += " validate"
-
-			// steamcmd.sh Command
-			steamCmdCommand := []string{
-				path.Join(serverCfg.Server.SteamCMDDir, "steamcmd.sh"),
-				"+login anonymous",
-				fmt.Sprintf("+force_install_dir %s", serverCfg.Server.Path),
-				argAppUpdate,
-			}
-			if viper.GetBool(AllServers) {
-				steamCmdCommand = append(steamCmdCommand, args[0:]...)
-			} else if len(args) > 1 {
-				steamCmdCommand = append(steamCmdCommand, args[1:]...)
-			}
-			steamCmdCommand = append(steamCmdCommand, "+quit")
-			commandArgs = append(commandArgs, strings.Join(steamCmdCommand, " "))
-
-			logger.Debugf("full command: %s", commandArgs)
-			logger.Infof("running steamcmd command in container: %s", steamCmdCommand)
-			if err := func() error {
-				cmd := exec.Command(command, commandArgs...)
-				tty, err := pty.Start(cmd)
-				if err != nil {
-					logger.Errorf("%+v", err)
-					return err
-				}
-				defer func() {
-					if tty == nil {
-						logger.Debug("failed to close tty as it is already nil")
-						return
-					}
-					if err = tty.Close(); err != nil {
-						logger.Debug(err)
-						return
-					}
-				}()
-
-				go func() {
-					logger.Debug("beginning to stream logs")
-					copyLogs(tty)
-				}()
-
-				if err := cmd.Wait(); err != nil {
-					logger.Errorf("%+v", err)
-					errorOccured = true
-				}
-
-				return nil
-			}(); err != nil {
-				logger.Errorf("%+v", err)
-				break
+			if err := server.SteamCMDUpdate(serverCfg, viper.GetString("beta")); err != nil {
+				log.Error(err)
+				errorOccured = true
 			}
 		}
 
