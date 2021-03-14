@@ -159,12 +159,12 @@ func SteamCMDUpdate(serverCfg *config.Config, beta string) error {
 	logger.Infof("running steamcmd.sh with args: %s", contCfg.Cmd)
 
 	if err = DockerCli.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
-		return fmt.Errorf("failed to start steamcmd container. %w", err)
+		return fmt.Errorf("failed to start steamcmd container. %+v", err)
 	}
 	defer func() {
 		stopTimeout := 5 * time.Second
 		if err := DockerCli.ContainerStop(context.Background(), resp.ID, &stopTimeout); err != nil {
-			logger.Errorf("unable to stop steamcmd container. %w", err)
+			logger.Errorf("unable to stop steamcmd container. %+v", err)
 		}
 	}()
 
