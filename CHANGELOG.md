@@ -1,3 +1,7 @@
+## 0.1.34 / 2021-03-14
+
+* [ENHANCEMENT] fixup steamcmd update logic
+
 ## 0.1.33 / 2021-03-14
 
 * [ENHANCEMENT] allow core file size up to 2000
