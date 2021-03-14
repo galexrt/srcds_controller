@@ -44,6 +44,7 @@ server:
         actions:
           - RESTART
         actionOpts: {}
+  steamCMDDir: /home/gameserver/steamcmd
 checker:
   interval: 30s
   splay:
