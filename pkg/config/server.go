@@ -57,8 +57,9 @@ type ACL struct {
 
 // RunOptions run options such as user and group id to run the server as.
 type RunOptions struct {
-	UID int `yaml:"uid"`
-	GID int `yaml:"gid"`
+	UID     int    `yaml:"uid"`
+	GID     int    `yaml:"gid"`
+	HomeDir string `yaml:"homeDir"`
 }
 
 // MapSelection map selection config

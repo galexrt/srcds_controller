@@ -45,9 +45,15 @@ var serverToolsUpdate = &cobra.Command{
 		errorOccured := false
 		for _, serverCfg := range servers {
 			logger := log.WithFields(log.Fields{
-				"server": serverCfg.Server,
+				"server": serverCfg.Server.Name,
 				"path":   serverCfg.Server.Path,
 			})
+
+			// Set the server dir as the home, unless otherwise set
+			serverHomeDir := serverCfg.Server.Path
+			if serverCfg.Server.RunOptions.HomeDir != "" {
+				serverHomeDir = serverCfg.Server.RunOptions.HomeDir
+			}
 
 			// Base docker Command + Args
 			command := "docker"
@@ -58,6 +64,7 @@ var serverToolsUpdate = &cobra.Command{
 				// Set correct user + work dir
 				fmt.Sprintf("--user=%d:%d", serverCfg.Server.RunOptions.UID, serverCfg.Server.RunOptions.GID),
 				fmt.Sprintf("--workdir=%s", serverCfg.Server.Path),
+				fmt.Sprintf("--env=HOME=%s", serverHomeDir),
 				// Add volumes
 				fmt.Sprintf("--volume=%s:%s", serverCfg.Server.Path, serverCfg.Server.Path),
 				fmt.Sprintf("--volume=%s:%s", serverCfg.Server.SteamCMDDir, serverCfg.Server.SteamCMDDir),
@@ -86,6 +93,7 @@ var serverToolsUpdate = &cobra.Command{
 			steamCmdCommand = append(steamCmdCommand, "+quit")
 			commandArgs = append(commandArgs, strings.Join(steamCmdCommand, " "))
 
+			logger.Debugf("full command: %s", commandArgs)
 			logger.Infof("running steamcmd command in container: %s", steamCmdCommand)
 			if err := func() error {
 				cmd := exec.Command(command, commandArgs...)
