@@ -1,3 +1,7 @@
+## 0.1.35 / 2021-03-14
+
+* [BUGFIX] fix errof calls
+
 ## 0.1.34 / 2021-03-14
 
 * [ENHANCEMENT] fixup steamcmd update logic
