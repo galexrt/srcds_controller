@@ -37,16 +37,17 @@ import (
 
 // SteamCMDUpdate runs steamcmd.sh for a server
 func SteamCMDUpdate(serverCfg *config.Config, beta string) error {
-	logger := log.WithFields(log.Fields{
-		"server": serverCfg.Server.Name,
-		"path":   serverCfg.Server.Path,
-	})
-
 	// Set the server dir as the home, unless otherwise set
 	serverHomeDir := serverCfg.Server.Path
 	if serverCfg.Server.RunOptions.HomeDir != "" {
 		serverHomeDir = serverCfg.Server.RunOptions.HomeDir
 	}
+	serverPath := path.Clean(serverCfg.Server.Path)
+
+	logger := log.WithFields(log.Fields{
+		"server": serverCfg.Server.Name,
+		"path":   serverPath,
+	})
 
 	argAppUpdate := fmt.Sprintf("+app_update %d", serverCfg.Server.GameID)
 	if beta != "" {
@@ -74,6 +75,12 @@ func SteamCMDUpdate(serverCfg *config.Config, beta string) error {
 		return err
 	}
 
+	steamCMDDir := serverCfg.Server.SteamCMDDir
+	if steamCMDDir == "" {
+		steamCMDDir = path.Join(serverHomeDir, "steamcmd")
+	}
+	log.Debugf("server dir: %s, steamcmd dir: %+s", serverPath, steamCMDDir)
+
 	contCfg := &container.Config{
 		Labels: map[string]string{
 			"app":        "steamcmd",
@@ -83,18 +90,18 @@ func SteamCMDUpdate(serverCfg *config.Config, beta string) error {
 			fmt.Sprintf("HOME=%s", serverHomeDir),
 		},
 		AttachStdin: false,
-		Tty:         false,
+		Tty:         true,
 		OpenStdin:   false,
 		Hostname:    hostname,
 		User:        fmt.Sprintf("%d:%d", serverCfg.Server.RunOptions.UID, serverCfg.Server.RunOptions.GID),
 		Image:       *serverCfg.Docker.Image,
-		WorkingDir:  serverCfg.Server.Path,
+		WorkingDir:  serverPath,
 		Entrypoint: strslice.StrSlice{
-			path.Join(serverCfg.Server.SteamCMDDir, "steamcmd.sh"),
+			path.Join(steamCMDDir, "steamcmd.sh"),
 		},
 		Cmd: strslice.StrSlice{
 			"+login anonymous",
-			fmt.Sprintf("+force_install_dir %s", serverCfg.Server.Path),
+			fmt.Sprintf("+force_install_dir %s", serverPath),
 			argAppUpdate,
 			"+quit",
 		},
@@ -129,15 +136,15 @@ func SteamCMDUpdate(serverCfg *config.Config, beta string) error {
 			// Server directory
 			{
 				Type:     mount.TypeBind,
-				Source:   serverCfg.Server.Path,
-				Target:   serverCfg.Server.Path,
+				Source:   serverPath,
+				Target:   serverPath,
 				ReadOnly: false,
 			},
 			// SteamCMD directory
 			{
 				Type:     mount.TypeBind,
-				Source:   serverCfg.Server.SteamCMDDir,
-				Target:   serverCfg.Server.SteamCMDDir,
+				Source:   steamCMDDir,
+				Target:   steamCMDDir,
 				ReadOnly: false,
 			},
 		},

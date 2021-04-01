@@ -194,6 +194,12 @@ var serverConsoleCmd = &cobra.Command{
 					return
 				case out := <-outChan:
 					history.Append(tui.NewLabel(out))
+				case <-time.After(15 * time.Minute):
+					length := history.Length()
+					// Reset History box after +-1000 lines
+					if length > 1000 {
+						history = tui.NewVBox()
+					}
 				}
 			}
 		}()
