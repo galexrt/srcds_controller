@@ -1,3 +1,7 @@
+## 0.1.36 / 2021-04-01
+
+* [BUGFIX] Fix issues with `sc tools update` paths for "external" gameservers
+
 ## 0.1.35 / 2021-03-14
 
 * [BUGFIX] fix errof calls
