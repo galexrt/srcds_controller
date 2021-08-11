@@ -183,8 +183,8 @@ func Start(serverCfg *config.Config) error {
 		contHostCfg.Ulimits = []*units.Ulimit{
 			{
 				Name: "core",
-				Hard: 2000,
-				Soft: 2000,
+				Hard: 10000,
+				Soft: 10000,
 			},
 		}
 
