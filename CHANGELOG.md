@@ -1,3 +1,7 @@
+## 0.1.37 / 2021-08-11
+
+* [BUGFIX] Update gin lib to address CVE
+
 ## 0.1.36 / 2021-04-01
 
 * [BUGFIX] Fix issues with `sc tools update` paths for "external" gameservers
