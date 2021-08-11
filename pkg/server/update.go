@@ -49,6 +49,10 @@ func SteamCMDUpdate(serverCfg *config.Config, beta string) error {
 		"path":   serverPath,
 	})
 
+	if serverCfg.Server.GameID <= 0 {
+		return fmt.Errorf("server can't be updated using the update steamcmd")
+	}
+
 	argAppUpdate := fmt.Sprintf("+app_update %d", serverCfg.Server.GameID)
 	if beta != "" {
 		argAppUpdate += fmt.Sprintf(" -beta %s", beta)
