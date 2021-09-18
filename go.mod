@@ -1,6 +1,6 @@
 module github.com/galexrt/srcds_controller
 
-go 1.14
+go 1.16
 
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
@@ -16,7 +16,7 @@ require (
 	github.com/galexrt/go-rcon v0.0.0-20191004120034-77f90a2143f9
 	github.com/gdamore/tcell v1.3.0 // indirect
 	github.com/gin-contrib/pprof v1.3.0
-	github.com/gin-gonic/gin v1.7.3
+	github.com/gin-gonic/gin v1.7.4
 	github.com/google/gops v0.3.10
 	github.com/imdario/mergo v0.3.9
 	github.com/lucasb-eyer/go-colorful v1.0.3 // indirect

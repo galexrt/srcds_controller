@@ -1,5 +1,18 @@
-FROM galexrt/gameserver:v20210211-204709-521
-LABEL maintainer="Alexander Trost <galexrt@googlemail.com>"
+FROM ghcr.io/galexrt/gameserver:v20210919-000315-232
+
+ARG BUILD_DATE="N/A"
+ARG REVISION="N/A"
+
+LABEL org.opencontainers.image.authors="Alexander Trost <galexrt@googlemail.com>" \
+    org.opencontainers.image.created="${BUILD_DATE}" \
+    org.opencontainers.image.title="galexrt/srcds_controller" \
+    org.opencontainers.image.description="N/A" \
+    org.opencontainers.image.documentation="https://github.com/galexrt/srcds_controller/blob/main/README.md" \
+    org.opencontainers.image.url="https://github.com/galexrt/srcds_controller" \
+    org.opencontainers.image.source="https://github.com/galexrt/srcds_controller" \
+    org.opencontainers.image.revision="${REVISION}" \
+    org.opencontainers.image.vendor="galexrt" \
+    org.opencontainers.image.version="N/A"
 
 ADD .build/linux-amd64/srcds_runner /bin/srcds_runner
 ADD .build/linux-amd64/sc /bin/sc

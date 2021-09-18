@@ -1,3 +1,8 @@
+## 0.1.38 / 2021-09-19
+
+* [BUGFIX] Fix container image upload to quay.io
+* [ENHANCEMENT] Disable Docker Hub image upload
+
 ## 0.1.37 / 2021-08-11
 
 * [BUGFIX] Update gin lib to address CVE

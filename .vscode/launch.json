@@ -14,20 +14,6 @@
                 "--log-level=DEBUG",
                 "--dry-run=true"
             ]
-        },
-        {
-            "name": "Launch srcds_webber",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}/cmd/srcds_webber/",
-            "env": {
-                "SESSION_SECRET": "dtklArfmZUU2__BiUBwcXU1o",
-            },
-            "args": [
-                "--config=${workspaceFolder}/.srcds_webber.yaml"
-            ],
-            "cwd": "${workspaceFolder}/cmd/srcds_webber/"
         }
     ]
 }
