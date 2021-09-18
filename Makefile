@@ -45,7 +45,7 @@ build: promu
 	GO111MODULE=$(GO111MODULE) $(PROMU) build --prefix $(PREFIX) $(PROMU_BINARIES)
 
 check_license:
-	@OUTPUT="$$(promu check licenses)"; \
+	@OUTPUT="$$($(PROMU) check licenses)"; \
 	if [[ $$OUTPUT ]]; then \
 		echo "Found go files without license header:"; \
 		echo "$$OUTPUT"; \
