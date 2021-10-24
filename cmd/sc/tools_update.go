@@ -18,10 +18,7 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"os"
 
-	"github.com/acarl005/stripansi"
 	"github.com/galexrt/srcds_controller/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -59,27 +56,4 @@ func init() {
 	viper.BindPFlag("beta", serverToolsUpdate.PersistentFlags().Lookup("beta"))
 
 	serverToolsCmd.AddCommand(serverToolsUpdate)
-}
-
-func copyLogs(r io.Reader) error {
-	buf := make([]byte, 512)
-	for {
-		n, err := r.Read(buf)
-		if n > 0 {
-			os.Stdout.Write([]byte(
-				stripansi.Strip(
-					string(buf[0:n]),
-				),
-			),
-			)
-		}
-		if err == io.EOF {
-			log.Debug("copyLogs: received EOF from given log source")
-			return nil
-		}
-		if err != nil {
-			log.Debug(err)
-			return err
-		}
-	}
 }

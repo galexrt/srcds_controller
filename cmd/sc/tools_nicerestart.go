@@ -56,9 +56,7 @@ var serverToolsNiceRestart = &cobra.Command{
 		errorOccured := false
 
 		rawAnnounceTimes := viper.GetStringSlice("default-announce-times")
-		for _, a := range viper.GetStringSlice("additional-announce-times") {
-			rawAnnounceTimes = append(rawAnnounceTimes, a)
-		}
+		rawAnnounceTimes = append(rawAnnounceTimes, viper.GetStringSlice("additional-announce-times")...)
 
 		secsTotal := int(duration.Seconds())
 		secsRemaining := secsTotal
@@ -95,6 +93,17 @@ var serverToolsNiceRestart = &cobra.Command{
 					wg.Add(1)
 					go func(cfg *config.Config) {
 						defer wg.Done()
+						stopCommands := viper.GetStringSlice("stop-commands")
+						log.Debugf("stop commands given: %+v", stopCommands)
+						if len(stopCommands) > 0 {
+							log.Infof("sending commands instead of stopping/restarting the server(s): %+v", stopCommands)
+							for _, command := range stopCommands {
+								if err := server.SendCommand(cfg, []string{command}); err != nil {
+									errorOccured = true
+								}
+							}
+							return
+						}
 
 						if err := server.Stop(cfg); err != nil {
 							log.Errorf("error during server stop. %+v", err)
@@ -121,19 +130,24 @@ var serverToolsNiceRestart = &cobra.Command{
 				break timeLoop
 			}
 
-			var mins float64
-			mins = float64(secsRemaining) / float64(60)
+			mins := float64(secsRemaining) / float64(60)
 			if byMinuteAnnouncement && mins == float64(int64(mins)) {
 				log.Info("countdown: another minute is over")
-				command := fmt.Sprintf(viper.GetString("announce-minutes"), int64(mins))
-				sendCommandInParallel(servers, command)
+				if viper.GetString("announce-minutes") != "" {
+					command := fmt.Sprintf(viper.GetString("announce-minutes"), int64(mins))
+					sendCommandInParallel(servers, command)
+				}
 			} else if contains(announceTimes, strconv.Itoa(secsRemaining)) {
 				log.Debug("countdown: need to announce")
-				command := fmt.Sprintf(viper.GetString("announce-seconds"), int64(secsRemaining))
-				sendCommandInParallel(servers, command)
+				if viper.GetString("announce-seconds") != "" {
+					command := fmt.Sprintf(viper.GetString("announce-seconds"), int64(secsRemaining))
+					sendCommandInParallel(servers, command)
+				}
 			} else if bySecondsAnnouncement {
-				command := fmt.Sprintf(viper.GetString("announce-seconds"), int64(secsRemaining))
-				sendCommandInParallel(servers, command)
+				if viper.GetString("announce-seconds") != "" {
+					command := fmt.Sprintf(viper.GetString("announce-seconds"), int64(secsRemaining))
+					sendCommandInParallel(servers, command)
+				}
 			}
 			if timeLoggerCoolDown == 15 || timeLoggerCoolDown == 0 {
 				log.Infof("countdown: remaining: %d seconds, total: %d seconds", secsRemaining, secsTotal)
@@ -159,12 +173,14 @@ func init() {
 	serverToolsNiceRestart.PersistentFlags().String("announce-seconds", "say Server Restart in %d second(s)!", "Command template to be sent to servers during seconds over countdown")
 	serverToolsNiceRestart.PersistentFlags().StringSlice("default-announce-times", []string{"EVERY_MINUTE", "45", "30", "15", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"}, "Default times  at which the left time should be announced")
 	serverToolsNiceRestart.PersistentFlags().StringSlice("additional-announce-times", []string{}, "At which additional times the left time should be announced")
+	serverToolsNiceRestart.PersistentFlags().StringSlice("stop-commands", []string{}, "If this is set, the server will not be stopped but only these commands are executed.")
 	viper.BindPFlag("duration", serverToolsNiceRestart.PersistentFlags().Lookup("duration"))
 	viper.BindPFlag("stop-only", serverToolsNiceRestart.PersistentFlags().Lookup("stop-only"))
 	viper.BindPFlag("announce-minutes", serverToolsNiceRestart.PersistentFlags().Lookup("announce-minutes"))
 	viper.BindPFlag("announce-seconds", serverToolsNiceRestart.PersistentFlags().Lookup("announce-seconds"))
 	viper.BindPFlag("default-announce-times", serverToolsNiceRestart.PersistentFlags().Lookup("default-announce-times"))
 	viper.BindPFlag("additional-announce-times", serverToolsNiceRestart.PersistentFlags().Lookup("additional-announce-times"))
+	viper.BindPFlag("stop-commands", serverToolsNiceRestart.PersistentFlags().Lookup("stop-commands"))
 
 	serverToolsCmd.AddCommand(serverToolsNiceRestart)
 }
