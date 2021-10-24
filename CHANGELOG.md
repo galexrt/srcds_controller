@@ -1,3 +1,7 @@
+## 0.1.39 / 2021-10-24
+
+* [ENHANCEMENT] allow `sc tools nicerestart` to run commands instead of stop/restart server(s)
+
 ## 0.1.38 / 2021-09-19
 
 * [BUGFIX] Fix container image upload to quay.io
